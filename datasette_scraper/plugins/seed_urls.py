@@ -6,3 +6,16 @@ def get_seed_urls(config):
         return config['seed-urls']
 
     return []
+
+@hookimpl
+def config_schema():
+    return {
+      'type': 'array',
+      'items': {
+        'type': 'string'
+      }
+    }
+
+@hookimpl
+def config_default_value():
+    return []

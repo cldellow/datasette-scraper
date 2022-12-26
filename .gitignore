@@ -10,3 +10,4 @@ venv
 .vscode
 dist
 build
+editor.bundle.js

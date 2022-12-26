@@ -1,0 +1,30 @@
+{
+  "name": "jsonforms-bundle",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "@emotion/react": "^11.10.5",
+    "@emotion/styled": "^11.10.5",
+    "@jsonforms/core": "^3.0.0",
+    "@jsonforms/material-renderers": "^3.0.0",
+    "@jsonforms/react": "^3.0.0",
+    "@mui/icons-material": "^5.11.0",
+    "@mui/material": "^5.11.2",
+    "@mui/styles": "^5.11.2",
+    "@mui/x-date-pickers": "^5.0.12",
+    "react": "^17.0.1",
+    "react-dom": "^17.0.1"
+  },
+  "scripts": {
+    "build": "yarn rollup --config rollup.config.mjs && yarn copy",
+    "watch": "yarn rollup --config rollup.config.mjs --watch --watch.onEnd 'yarn copy'",
+    "copy": "cp editor.bundle.js ../datasette_scraper/static/editor.bundle.js"
+  },
+  "devDependencies": {
+    "@rollup/plugin-json": "^6.0.0",
+    "@rollup/plugin-node-resolve": "^15.0.1",
+    "rollup": "^3.8.1",
+    "rollup-plugin-commonjs": "^10.1.0"
+  }
+}

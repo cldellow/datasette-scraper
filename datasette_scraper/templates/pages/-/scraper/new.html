@@ -8,7 +8,12 @@
 <h1>Add Scrape</h1>
 
 <div>TODO: show config object, using https://jsonforms.io/docs/validation/</div>
-
-<a href='/-/scraper/new'>Add New Scrape</a>
+<script>
+process = {
+  env: 'dev'
+};
+</script>
+<div id='editor'></div>
+<script src='/-/static-plugins/datasette_scraper/editor.bundle.js'></script>
 
 {% endblock %}
