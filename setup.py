@@ -32,7 +32,7 @@ setup(
     version=VERSION,
     packages=["datasette_scraper"],
     entry_points={"datasette": ["scraper = datasette_scraper"]},
-    install_requires=["datasette", "extracto", "datasette-template-sql"],
+    install_requires=["datasette", "extracto", "datasette-template-sql", "pluggy"],
     extras_require={"test": ["wheel", "pytest", "pytest-asyncio", "pytest-watch"]},
     package_data={
         "datasette_scraper": ["static/*", "templates/*"]
