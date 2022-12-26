@@ -391,73 +391,6 @@ Returns `None` to indicate that new crawls should not use this plugin by default
 
 Otherwise, returns a reasonable default value that conforms to the schema in `config_schema()`
 
-## Database design
-
-The ops database has some tables to manage the crawl:
-
-### dss_crawl
-
-- id: number
-- name: string
-- started_at: number
-- finished_at: number
-- status: 'running' | 'done'
-
-### dss_host_rate_limit
-
-- host: string
-- next_fetch_at: number
-- delay_seconds: number
-
-### dss_crawl_host_stats
-
-- crawl_id: number
-- host: string
-- fetched: number
-- fetched_fresh: number
-- fetched_2xx: number
-- fetched_3xx: number
-- fetched_4xx: number
-- fetched_5xx: number
-
-### dss_extract_stats
-
-- crawl_id: number
-- database: string
-- table: string
-- added: number
-- modified: number
-- same: number
-
-### dss_crawl_queue
-
-- crawl_id: number
-- host: string
-- url: string
-- depth: number
-
-### dss_crawl_queue_history
-
-- crawl_id: number
-- host: string
-- url: string
-- fetched_at: number
-- fetched_fresh: boolean
-- depth: number
-- status_code: number
-- content_type: string
-- size: string
-
-### dss_fetch_cache
-
-- url: string (pkey)
-- fetched_at: number
-- host: string
-- request_headers: string
-- status_code: number
-- response_headers: string
-- body: blob
-
 ## Development
 
 To set up this plugin locally, first checkout the code. Then create a new virtual environment:
@@ -475,30 +408,6 @@ To run the tests:
     pytest
 
 ## Questions
-
-### Make config editing bearable
-
-Maybe use a plugin configuration schema that plays nicely with json schema so we can render a config editor with https://json-editor.github.io/json-editor/ ?
-
-Could we enable editing the metadata via the web UI? Kind of bizarre, but… maybe?
-
-[datasette#1015](https://github.com/simonw/datasette/issues/1015)  may allow us to (violently?) restart the process when config is changed
-
-### How to write safely
-
-See [db.execute_write](https://github.com/simonw/datasette/blob/867e0abd3429f837d5f15e6843a38f848ee562f0/docs/internals.rst#await-dbexecute_writesql-paramsnone-blocktrue)
-
-### How to have a background worker
-
-[datasette-scale-to-zero](https://github.com/simonw/datasette-scale-to-zero/blob/main/datasette_scale_to_zero/__init__.py) uses an asyncio loop that we could be inspired by
-
-### Can we hide the dss_ ops tables?
-
-The [get_metadata](https://docs.datasette.io/en/stable/plugin_hooks.html#get-metadata-datasette-key-database-table) hook and the [hidden tables](https://docs.datasette.io/en/stable/metadata.html#hiding-tables) feature might work well.
-
-### Can we provide dashboards to show progress?
-
-I think if user has [datasette-dashboards](https://github.com/rclement/datasette-dashboards) installed and we implement an appropriate [get_metadata](https://docs.datasette.io/en/stable/plugin_hooks.html#get-metadata-datasette-key-database-table), we can do whatever we like.
 
 ### How can we provide a lazily parsed form of the response?
 
