@@ -1,6 +1,7 @@
 import resolve from '@rollup/plugin-node-resolve';
 import commonjs from 'rollup-plugin-commonjs';
 import json from '@rollup/plugin-json';
+import { terser } from 'rollup-plugin-terser';
 
 export default {
   input: 'editor.js',
@@ -19,6 +20,17 @@ export default {
         'node_modules/react/jsx-runtime.js': ['jsx', 'jsxs'],
         'node_modules/react-dom/index.js': ['flushSync', 'createPortal'],
       }
-    })
+    }),
+    process.env.NODE_ENV === 'production' && terser({
+      compress: {
+        keep_infinity: true,
+        pure_getters: true,
+        passes: 10,
+      },
+      ecma: 2016,
+      toplevel: false,
+      format: {
+      },
+    }),
   ]
 };

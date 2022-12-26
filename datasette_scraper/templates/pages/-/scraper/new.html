@@ -9,9 +9,26 @@
 
 <div>TODO: show config object, using https://jsonforms.io/docs/validation/</div>
 <script>
+// Seems weird that I need to provide this?
 process = {
-  env: 'dev'
+  env: {}
 };
+
+initialData = {};
+
+schema = {
+  type: 'object',
+  properties: {
+    name: { type: 'string', minLength: 1 }
+  }
+};
+
+uischema = undefined;
+
+onChange = ({ errors, data }) => {
+    console.log(errors);
+    console.log(data);
+}
 </script>
 <div id='editor'></div>
 <script src='/-/static-plugins/datasette_scraper/editor.bundle.js'></script>

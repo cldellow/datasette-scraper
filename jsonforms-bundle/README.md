@@ -12,6 +12,6 @@ It's all rather Rube Goldberg-y.
 
 # Dev
 
-`yarn build` to get a dev bundle, `yarn build:prod` to get a minified prod bundle.
+`yarn build` to get a dev bundle, `NODE_ENV=production yarn build` to get a minified prod bundle.
 
 `yarn watch` is useful in dev.

@@ -18,16 +18,6 @@ const theme = createTheme({
   },
 });
 
-/*
-ReactDOM.render(
-  <ThemeProvider theme={theme}>
-    <CssBaseline />
-    <App />
-  </ThemeProvider>,
-  document.getElementById('root')
-);
-*/
-
 ReactDOM.render(
   React.createElement(
     ThemeProvider,
