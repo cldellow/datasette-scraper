@@ -24,7 +24,7 @@ def ensure_schema_internal(conn):
     elif v == current_schema_version:
         pass
     else:
-        raise ScraperError('unexpected schema version: {}'.format(v))
+        raise ScraperError('unsupported schema version: {} -- you may need to give datasette-scraper its own database'.format(v))
 
 async def ensure_schema(db):
     version = await get_db_version(db)
