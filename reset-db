@@ -1,0 +1,6 @@
+#!/bin/bash
+
+set -euo pipefail
+
+rm -f test.db
+sqlite3 test.db "vacuum;"
