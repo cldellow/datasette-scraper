@@ -13,7 +13,17 @@ async def get_db_version(db):
     for row in results:
         return row['user_version']
 
+def ensure_wal_mode(conn):
+    old_level = conn.isolation_level
+    try:
+        conn.isolation_level = None
+        conn.execute('PRAGMA journal_mode=WAL').fetchone()
+    finally:
+        conn.isolation_level = old_level
+
 def ensure_schema_internal(conn):
+    ensure_wal_mode(conn)
+
     v, = conn.execute("PRAGMA user_version").fetchone()
 
     if not v:
@@ -27,8 +37,6 @@ def ensure_schema_internal(conn):
         raise ScraperError('unsupported schema version: {} -- you may need to give datasette-scraper its own database'.format(v))
 
 async def ensure_schema(db):
-    version = await get_db_version(db)
-    names = await db.table_names()
     await db.execute_write_fn(ensure_schema_internal, block=True)
     version = await get_db_version(db)
 
@@ -36,4 +44,6 @@ async def ensure_schema(db):
         raise ScraperError('unable to ensure schema in database {} (version={}; desired={}); please check that the database is mutable and not the _memory database'.format(db.name, version, current_schema_version))
 
     names = await db.table_names()
+    # TODO: We should loop over our configs and enable WAL mode in any target database.
+    #       Maybe there's a way to do that lazily, once?
 

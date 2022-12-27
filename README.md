@@ -246,6 +246,14 @@ looks like:
 }
 ```
 
+## Usage notes
+
+`datasette-scraper` requires a database in which to track its operational data,
+and a database in which to store scraped data. They can be the same database.
+
+Both databases will be put into WAL mode.
+
+The ops database's `user_version` pragma will be used to track schema versions.
 
 ## Architecture
 
