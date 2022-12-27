@@ -10,7 +10,7 @@
 <a href='{{ dss_id }}/edit'>Edit Crawl</a>
 
 {% for row in sql("select * from _dss_job WHERE crawl_id = ? AND finished_at IS NULL", [dss_id]) %}
-  <h2>Active Job #{{row['id']}}</h2>
+<h2>Job #{{row['id']}} ({{row['status']}})</h2>
   Pending: {{ sql('select count(*) FROM _dss_crawl_queue WHERE job_id = ?', [row['id']])[0][0] }}
   Crawled: {{ sql('select count(*) FROM _dss_crawl_queue_history WHERE job_id = ?', [row['id']])[0][0] }}
   <form method='post' action='{{ dss_id }}/cancel'>

@@ -37,6 +37,7 @@ CREATE TABLE _dss_job(
   id integer primary key,
   crawl_id integer not null references _dss_crawl(id) on delete cascade,
   started_at text not null default (strftime('%Y-%m-%d %H:%M:%f')),
+  status text not null default 'seeding' check (status IN ('seeding', 'running', 'cancelled', 'done')),
   -- NULL finished-at => currently in progress
   finished_at text
 );

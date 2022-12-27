@@ -39,6 +39,8 @@ def entrypoint_seeder(coordinator_inbox, dss_db_name, db_map, job_id):
 
             for host in set(hosts):
                 con.execute('INSERT INTO _dss_host_rate_limit(host) SELECT ? WHERE NOT EXISTS(SELECT * FROM _dss_host_rate_limit WHERE host = ?)', [host, host])
+
+            con.execute("UPDATE _dss_job SET status = 'running' WHERE id = ?", [job_id])
     finally:
         con.close()
 
