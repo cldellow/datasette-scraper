@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block title %}Scraper: Crawl {{ dss_id }}{% endblock %}
+
+{% block body_class %}index{% endblock %}
+
+{% block content %}
+<h1>{% if dss_id %}Update Crawl {{ dss_id }} {% else %} Add Crawl {% endif %}</h1>
+
+<a href='{{ dss_id }}/edit'>Edit Crawl</a>
+
+{% endblock %}

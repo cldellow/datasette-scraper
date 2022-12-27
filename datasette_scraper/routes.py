@@ -28,6 +28,20 @@ async def scraper_crawl_id(datasette, request):
     if request.method != 'GET':
         return Response('Unexpected method', status=405)
 
+    id = int(request.url_vars["id"])
+
+    context = {
+        'dss_id': id
+    }
+
+    return Response.html(
+        await datasette.render_template('/pages/-/scraper/crawl.html', context=context, request=request)
+    )
+
+async def scraper_crawl_id_edit(datasette, request):
+    if request.method != 'GET':
+        return Response('Unexpected method', status=405)
+
     id = request.url_vars["id"]
 
     print(id)
@@ -37,11 +51,10 @@ async def scraper_crawl_id(datasette, request):
     return Response.html(
         await datasette.render_template('/pages/-/scraper/new.html', request=request)
     )
-    #return await datasette.render_template('index.html', context=None, request=request)
-    #return Response.html('hi {}'.format(id))
 
 
 routes = [
     (r"^/-/scraper/upsert$", scraper_upsert),
     (r"^/-/scraper/crawl/(?P<id>[0-9]+)$", scraper_crawl_id),
+    (r"^/-/scraper/crawl/(?P<id>[0-9]+)/edit$", scraper_crawl_id_edit),
 ]

@@ -59,7 +59,7 @@ def extra_template_vars(datasette, request):
         # Can we get the ID from the URL?
         print(request.path)
 
-        m = re.search('^/-/scraper/crawl/([0-9]+)$', request.path)
+        m = re.search('^/-/scraper/crawl/([0-9]+)', request.path)
         if m:
             id = int(m.group(1))
             db = get_database(datasette)
