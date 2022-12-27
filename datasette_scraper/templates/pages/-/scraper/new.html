@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 
-{% block title %}{% if dss_id %} Scraper: Update Scrape {{ dss_id }} {% else %} Scraper: Add Scrape {% endif %} {% endblock %}
+{% block title %}{% if dss_id %} Scraper: Update Crawl {{ dss_id }} {% else %} Scraper: Add Crawl {% endif %} {% endblock %}
 
 {% block body_class %}index{% endblock %}
 
 {% block content %}
-<h1>{% if dss_id %}Update Scrape {{ dss_id }} {% else %} Add Scrape {% endif %}</h1>
+<h1>{% if dss_id %}Update Crawl {{ dss_id }} {% else %} Add Crawl {% endif %}</h1>
 
 <script>
 // Seems weird that I need to provide this?
@@ -35,7 +35,7 @@ onChange = ({ errors, data }) => {
   <input type="hidden" name="csrftoken" value="{{ csrftoken() }}">
   <input id='scraper_id' type='hidden' name='id' value='{{ dss_id }}'/>
   <input id='scraper_config' type='hidden' name='config' value=''/>
-  <button id='scraper_submit' type='submit'>{% if dss_id %}Save{% else %}Add{% endif %} Scrape</button>
+  <button id='scraper_submit' type='submit'>{% if dss_id %}Save{% else %}Add{% endif %} Crawl</button>
   <script src='/-/static-plugins/datasette_scraper/editor.bundle.js'></script>
 </form>
 
