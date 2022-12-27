@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 
-{% block title %}Scraper: Add Scrape{% endblock %}
+{% block title %}{% if dss_id %} Scraper: Update Scrape {{ dss_id }} {% else %} Scraper: Add Scrape {% endif %} {% endblock %}
 
 {% block body_class %}index{% endblock %}
 
 {% block content %}
-<h1>Add Scrape</h1>
+<h1>{% if dss_id %}Update Scrape {{ dss_id }} {% else %} Add Scrape {% endif %}</h1>
 
 <script>
 // Seems weird that I need to provide this?
@@ -17,6 +17,7 @@ initialData = {{ dss_default_config }};
 
 schema = {{ dss_schema }};
 
+  // {{ dss_schema2 }}
 uischema = undefined;
 
 onChange = ({ errors, data }) => {
@@ -32,9 +33,9 @@ onChange = ({ errors, data }) => {
 <div id='editor'></div>
 <form action='/-/scraper/upsert' method='post'>
   <input type="hidden" name="csrftoken" value="{{ csrftoken() }}">
-  <input id='scraper_id' type='hidden' name='id' value='0'/>
+  <input id='scraper_id' type='hidden' name='id' value='{{ dss_id }}'/>
   <input id='scraper_config' type='hidden' name='config' value=''/>
-  <button id='scraper_submit' type='submit'>Add Scrape</button>
+  <button id='scraper_submit' type='submit'>{% if dss_id %}Save{% else %}Add{% endif %} Scrape</button>
   <script src='/-/static-plugins/datasette_scraper/editor.bundle.js'></script>
 </form>
 
