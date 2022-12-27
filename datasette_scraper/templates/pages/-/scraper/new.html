@@ -7,21 +7,15 @@
 {% block content %}
 <h1>Add Scrape</h1>
 
-<div>TODO: show config object, using https://jsonforms.io/docs/validation/</div>
 <script>
 // Seems weird that I need to provide this?
 process = {
   env: {}
 };
 
-initialData = {};
+initialData = {{ dss_default_config }};
 
-schema = {
-  type: 'object',
-  properties: {
-    name: { type: 'string', minLength: 1 }
-  }
-};
+schema = {{ dss_schema }};
 
 uischema = undefined;
 
@@ -30,7 +24,11 @@ onChange = ({ errors, data }) => {
     console.log(data);
 }
 </script>
+
 <div id='editor'></div>
-<script src='/-/static-plugins/datasette_scraper/editor.bundle.js'></script>
+<form method='post'>
+  <script src='/-/static-plugins/datasette_scraper/editor.bundle.js'></script>
+  <button type='submit'>Add Scrape</button>
+</form>
 
 {% endblock %}

@@ -9,13 +9,20 @@ def get_seed_urls(config):
 
 @hookimpl
 def config_schema():
-    return {
-      'type': 'array',
-      'items': {
-        'type': 'string'
-      }
-    }
+    from .. import ConfigSchema
+    return ConfigSchema(
+        schema = {
+          'type': 'array',
+          'items': {
+            'type': 'string',
+              'pattern': '^https?://.+'
+          }
+        },
+        uischema = {},
+        key = 'seed-urls',
+        group = 'Crawls',
+    )
 
 @hookimpl
 def config_default_value():
-    return []
+    return ['https://cldellow.com/']
