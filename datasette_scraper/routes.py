@@ -1,6 +1,15 @@
 import json
 from datasette import Response
 from .config import get_database
+from .coordinator import seed_crawl
+
+async def crawl_exists(datasette, crawl_id):
+    db = get_database(datasette)
+    rv = await db.execute('SELECT id FROM _dss_crawl WHERE id = ?', [crawl_id])
+    for row in rv:
+        return True
+
+    return False
 
 async def scraper_upsert(datasette, request):
     if request.method != 'POST':
@@ -30,6 +39,9 @@ async def scraper_crawl_id(datasette, request):
 
     id = int(request.url_vars["id"])
 
+    if not await crawl_exists(datasette, id):
+        return Response('not found', status=404)
+
     context = {
         'dss_id': id
     }
@@ -38,13 +50,51 @@ async def scraper_crawl_id(datasette, request):
         await datasette.render_template('/pages/-/scraper/crawl.html', context=context, request=request)
     )
 
+async def scraper_crawl_id_start(datasette, request):
+    if request.method != 'POST':
+        return Response('Unexpected method', status=405)
+
+    id = int(request.url_vars["id"])
+
+    if not await crawl_exists(datasette, id):
+        return Response('not found', status=404)
+
+    db = get_database(datasette)
+
+    rv = await db.execute_write("INSERT INTO _dss_job(crawl_id) VALUES (?)", [id], block=True);
+    job_id = rv.lastrowid
+
+    # TODO: handle UNIQUE constraint failed: _dss_job.crawl_id
+
+    seed_crawl(job_id)
+
+    return Response.redirect('/-/scraper/crawl/{}'.format(id))
+
+async def scraper_crawl_id_cancel(datasette, request):
+    if request.method != 'POST':
+        return Response('Unexpected method', status=405)
+
+    id = int(request.url_vars["id"])
+
+    if not await crawl_exists(datasette, id):
+        return Response('not found', status=404)
+
+    db = get_database(datasette)
+
+    # TODO: delete any pending crawl_queue items...ideally we'd do this in a txn
+    await db.execute_write("UPDATE _dss_job SET finished_at = strftime('%Y-%m-%d %H:%M:%f') WHERE crawl_id = ? AND finished_at IS NULL", [id], block=True);
+
+    return Response.redirect('/-/scraper/crawl/{}'.format(id))
+
+
 async def scraper_crawl_id_edit(datasette, request):
     if request.method != 'GET':
         return Response('Unexpected method', status=405)
 
-    id = request.url_vars["id"]
+    id = int(request.url_vars["id"])
 
-    print(id)
+    if not await crawl_exists(datasette, id):
+        return Response('not found', status=404)
 
     db = get_database(datasette)
 
@@ -56,5 +106,7 @@ async def scraper_crawl_id_edit(datasette, request):
 routes = [
     (r"^/-/scraper/upsert$", scraper_upsert),
     (r"^/-/scraper/crawl/(?P<id>[0-9]+)$", scraper_crawl_id),
+    (r"^/-/scraper/crawl/(?P<id>[0-9]+)/start$", scraper_crawl_id_start),
+    (r"^/-/scraper/crawl/(?P<id>[0-9]+)/cancel$", scraper_crawl_id_cancel),
     (r"^/-/scraper/crawl/(?P<id>[0-9]+)/edit$", scraper_crawl_id_edit),
 ]

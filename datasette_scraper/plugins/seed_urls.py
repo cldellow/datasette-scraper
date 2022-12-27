@@ -1,4 +1,4 @@
-from .. import hookimpl
+from ..hookspecs import hookimpl
 
 @hookimpl
 def get_seed_urls(config):

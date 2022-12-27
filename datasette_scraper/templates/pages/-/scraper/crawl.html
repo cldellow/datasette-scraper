@@ -9,4 +9,23 @@
 
 <a href='{{ dss_id }}/edit'>Edit Crawl</a>
 
+{% for row in sql("select * from _dss_job WHERE crawl_id = ? AND finished_at IS NULL", [dss_id]) %}
+  <h2>Active Job #{{row['id']}}</h2>
+  Pending: {{ sql('select count(*) FROM _dss_crawl_queue WHERE job_id = ?', [row['id']])[0][0] }}
+  Crawled: {{ sql('select count(*) FROM _dss_crawl_queue_history WHERE job_id = ?', [row['id']])[0][0] }}
+  <form method='post' action='{{ dss_id }}/cancel'>
+    <input type="hidden" name="csrftoken" value="{{ csrftoken() }}">
+    <input type='hidden' name='id' value='{{ dss_id }}'/>
+    <button type='submit'>Cancel Job</button>
+  </form>
+{% else %}
+  <form method='post' action='{{ dss_id }}/start'>
+    <input type="hidden" name="csrftoken" value="{{ csrftoken() }}">
+    <input type='hidden' name='id' value='{{ dss_id }}'/>
+    <button type='submit'>Start Job</button>
+  </form>
+{% endfor %}
+
+<h2>TODO: show previous job stats</h2>
+
 {% endblock %}

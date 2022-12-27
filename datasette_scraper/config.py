@@ -5,7 +5,6 @@ from .errors import ScraperError
 
 # TODO: this should look for a configurable database
 def get_database(datasette):
-    print('get_database called')
     return datasette.get_database()
 
 async def get_db_version(db):

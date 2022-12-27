@@ -1,10 +1,11 @@
-from datasette import hookimpl
+import datasette
 import html
 import re
 import json
 from .config import get_database, ensure_schema
 from .plugin import pm
 from .routes import routes
+from .coordinator import start_coordinator
 from collections import namedtuple
 
 ConfigSchema = namedtuple('ConfigSchema', ['schema', 'uischema', 'key', 'group'], defaults=(None))
@@ -17,15 +18,17 @@ class JsonString:
         return json.dumps(self.obj)
 
 
-@hookimpl
+@datasette.hookimpl
 def startup(datasette):
     async def inner():
         db = get_database(datasette)
         await ensure_schema(db)
 
+        start_coordinator(datasette)
+
     return inner
 
-@hookimpl
+@datasette.hookimpl
 def extra_template_vars(datasette, request):
     """Add dss_schema, dss_default_config, dss_id variables."""
 
@@ -72,12 +75,12 @@ def extra_template_vars(datasette, request):
         return {
             "dss_schema": JsonString(schema),
             "dss_default_config": JsonString(default_config),
-            "dss_id": JsonString(id)
+            "dss_id": id
         }
 
     return extra_vars
 
-@hookimpl
+@datasette.hookimpl
 def register_routes():
     return routes
 
