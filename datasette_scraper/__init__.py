@@ -28,14 +28,18 @@ def startup(datasette):
 
 @hookimpl
 def extra_template_vars(request):
-
     schema = {
         'type': 'object',
         'properties': {
         }
     };
 
-    default_config = {}
+    schema['properties']['name'] = {
+        'type': 'string',
+        'minLength': 1
+    }
+
+    default_config = {'name': 'xx'}
 
     for plugin in pm.get_plugins():
         if not 'config_schema' in dir(plugin):
@@ -50,11 +54,28 @@ def extra_template_vars(request):
 
     return {"dss_schema": JsonString(schema), "dss_default_config": JsonString(default_config)}
 
-#async def scraper(request):
-#    return Response.html(
-#        "Hello"
-#    )
-#
-#@hookimpl
-#def register_routes():
-#    return [(r"^/-/scraper$", scraper)]
+async def scraper_upsert(datasette, request):
+    if request.method != 'POST':
+        return Response('Unexpected method', status=405)
+
+    form = await request.post_vars()
+
+    id = int(form['id'])
+    config = json.loads(form['config'])
+
+    name = config['name']
+    config.pop('name')
+
+    db = get_database(datasette)
+
+    if not id:
+        rv = await db.execute_write('INSERT INTO _dss_crawl(name, config) VALUES (?, ?)', [name, json.dumps(config)], block=True)
+        id = rv.lastrowid
+    else:
+        await db.execute_write('UPDATE _dss_crawl SET name = ?, config = ? WHERE id = ?', [name, json.dumps(config), id], block=True)
+
+    return Response.redirect('/-/scraper/crawl/{}'.format(id))
+
+@hookimpl
+def register_routes():
+    return [(r"^/-/scraper/upsert$", scraper_upsert)]

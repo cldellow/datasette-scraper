@@ -22,13 +22,20 @@ uischema = undefined;
 onChange = ({ errors, data }) => {
     console.log(errors);
     console.log(data);
+
+    document.getElementById('scraper_config').value = JSON.stringify(data);
+    document.getElementById('scraper_submit').disabled = errors.length > 0;
+
 }
 </script>
 
 <div id='editor'></div>
-<form method='post'>
+<form action='/-/scraper/upsert' method='post'>
+  <input type="hidden" name="csrftoken" value="{{ csrftoken() }}">
+  <input id='scraper_id' type='hidden' name='id' value='0'/>
+  <input id='scraper_config' type='hidden' name='config' value=''/>
+  <button id='scraper_submit' type='submit'>Add Scrape</button>
   <script src='/-/static-plugins/datasette_scraper/editor.bundle.js'></script>
-  <button type='submit'>Add Scrape</button>
 </form>
 
 {% endblock %}
