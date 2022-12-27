@@ -26,13 +26,19 @@ def entrypoint_seeder(coordinator_inbox, dss_db_name, db_map, job_id):
 
     con = sqlite3.connect(dss_db_fname)
     con.isolation_level = None
+
+    hosts = []
     try:
         with con:
             con.execute('BEGIN')
             for seed in seeds:
                 url = urlparse(seed)
                 hostname = url.hostname
+                hosts.append(hostname)
                 con.execute('INSERT INTO _dss_crawl_queue(job_id, host, url, depth) VALUES (?, ?, ?, 0)', [job_id, hostname, seed])
+
+            for host in set(hosts):
+                con.execute('INSERT INTO _dss_host_rate_limit(host) SELECT ? WHERE NOT EXISTS(SELECT * FROM _dss_host_rate_limit WHERE host = ?)', [host, host])
     finally:
         con.close()
 

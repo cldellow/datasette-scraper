@@ -2,5 +2,5 @@
 
 set -euo pipefail
 
-rm -f test.db
+rm -f test.db*
 sqlite3 test.db "vacuum;"
