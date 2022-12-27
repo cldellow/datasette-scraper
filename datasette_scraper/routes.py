@@ -74,17 +74,25 @@ async def scraper_crawl_id_cancel(datasette, request):
     if request.method != 'POST':
         return Response('Unexpected method', status=405)
 
-    id = int(request.url_vars["id"])
+    crawl_id = int(request.url_vars["id"])
 
-    if not await crawl_exists(datasette, id):
+    if not await crawl_exists(datasette, crawl_id):
         return Response('not found', status=404)
+
+    def cancel(conn):
+        with conn:
+            rv = conn.execute('SELECT id FROM _dss_job WHERE crawl_id = ? AND finished_at IS NULL', [crawl_id])
+            job_id, = rv.fetchone()
+
+            if job_id:
+                conn.execute("UPDATE _dss_job SET finished_at = strftime('%Y-%m-%d %H:%M:%f') WHERE id = ?", [job_id])
+                conn.execute("DELETE FROM _dss_crawl_queue WHERE job_id = ?", [job_id])
 
     db = get_database(datasette)
 
-    # TODO: delete any pending crawl_queue items...ideally we'd do this in a txn
-    await db.execute_write("UPDATE _dss_job SET finished_at = strftime('%Y-%m-%d %H:%M:%f') WHERE crawl_id = ? AND finished_at IS NULL", [id], block=True);
+    await db.execute_write_fn(cancel)
 
-    return Response.redirect('/-/scraper/crawl/{}'.format(id))
+    return Response.redirect('/-/scraper/crawl/{}'.format(crawl_id))
 
 
 async def scraper_crawl_id_edit(datasette, request):
