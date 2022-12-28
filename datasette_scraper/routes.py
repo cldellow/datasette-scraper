@@ -1,7 +1,7 @@
 import json
 from datasette import Response
 from .config import get_database
-from .coordinator import seed_crawl
+from .workers import seed_crawl
 
 async def crawl_exists(datasette, crawl_id):
     db = get_database(datasette)

@@ -5,7 +5,7 @@ import json
 from .config import get_database, ensure_schema
 from .plugin import pm
 from .routes import routes
-from .coordinator import start_coordinator
+from .workers import start_workers
 from collections import namedtuple
 
 ConfigSchema = namedtuple('ConfigSchema', ['schema', 'uischema', 'key', 'group'], defaults=(None))
@@ -24,7 +24,7 @@ def startup(datasette):
         db = get_database(datasette)
         await ensure_schema(db)
 
-        start_coordinator(datasette)
+        start_workers(datasette)
 
     return inner
 

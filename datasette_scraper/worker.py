@@ -2,7 +2,7 @@ import sqlite3
 import time
 import os
 
-def entrypoint_worker(coordinator_inbox, dss_db_name, db_map):
+def entrypoint_worker(dss_db_name, db_map):
     # Need to open the datasette-scraper db, find the config for the crawl associated with
     # the job, then run the get_seed_urls hooks, then insert those into the
     # _dss_crawl_queue table
@@ -12,8 +12,8 @@ def entrypoint_worker(coordinator_inbox, dss_db_name, db_map):
     conn = sqlite3.connect(dss_db_fname)
 
     try:
-        while crawl_loop(conn):
-            pass
+        while True:
+            crawl_loop(conn)
     finally:
         conn.close()
 
@@ -67,7 +67,6 @@ def crawl_loop(conn):
 
     # if no URL, check to see if we should shut down (shut down if crawl_queue is empty)
 
-    #coordinator_inbox.put({ 'type': ipc.SEED_CRAWL_COMPLETE, 'job-id': job_id })
     pass
 
 
