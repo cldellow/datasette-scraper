@@ -96,8 +96,24 @@ def crawl_loop(conn):
         utils.check_for_job_complete(conn, job_id)
         return
 
-    print('response is')
-    print(json.dumps(response))
+    # Update stats
+    with conn:
+        conn.execute("INSERT OR IGNORE INTO _dss_job_stats(job_id, host) VALUES (?, ?)", [job_id, host])
+        xx_column = 'fetched_5xx'
+        status_code = response['status_code']
+
+        if status_code >= 200 and status_code <= 299:
+            xx_column = 'fetched_2xx'
+        elif status_code >= 300 and status_code <= 399:
+            xx_column = 'fetched_3xx'
+        elif status_code >= 400 and status_code <= 499:
+            xx_column = 'fetched_4xx'
+
+        maybe_fetched_fresh = ''
+        if response['fresh']:
+            maybe_fetched_fresh = ', fetched_fresh = fetched_fresh + 1'
+
+        conn.execute("UPDATE _dss_job_stats SET fetched = fetched + 1, {} = {} + 1{} WHERE job_id = ? AND host = ?".format(xx_column, xx_column, maybe_fetched_fresh), [job_id, host])
 
     utils.finish_crawl_queue_item(conn, id, response)
     utils.check_for_job_complete(conn, job_id)
