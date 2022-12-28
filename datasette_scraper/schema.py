@@ -44,11 +44,13 @@ CREATE TABLE _dss_job(
 
 -- URLs to be crawled
 CREATE TABLE _dss_crawl_queue(
-  job_id integer primary key references _dss_job(id) on delete cascade,
+  id integer primary key,
+  job_id integer not null references _dss_job(id) on delete cascade,
   host text not null,
   queued_at text not null default (strftime('%Y-%m-%d %H:%M:%f')),
   url text not null,
-  depth integer not null
+  depth integer not null,
+  claimed_at text
 );
 
 -- URLs that were crawled

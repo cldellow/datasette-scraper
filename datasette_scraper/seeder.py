@@ -15,10 +15,6 @@ def get_crawl_config_for_job(fname, job_id):
         con.close()
 
 def entrypoint_seeder(coordinator_inbox, dss_db_name, db_map, job_id):
-    # Need to open the datasette-scraper db, find the config for the crawl associated with
-    # the job, then run the get_seed_urls hooks, then insert those into the
-    # _dss_crawl_queue table
-
     dss_db_fname = db_map[dss_db_name]
 
     config = get_crawl_config_for_job(dss_db_fname, job_id)
