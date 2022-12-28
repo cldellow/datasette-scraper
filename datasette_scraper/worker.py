@@ -17,14 +17,7 @@ def entrypoint_worker(dss_db_name, db_map):
     finally:
         conn.close()
 
-def crawl_loop(conn):
-    print('crawl_loop running mypid={}'.format(os.getpid()))
-
-    # Warning: This is super naive! As we get experience operating at higher volumes,
-    # may need to tweak it.
-
-    # Try to find a URL to crawl that (a) isn't host rate limited and (b) hasn't been
-    # recently claimed by another worker.
+def get_next_crawl_queue_row(conn):
     row = conn.execute("SELECT id, job_id, host, queued_at, url, depth, claimed_at FROM _dss_crawl_queue WHERE host IN (SELECT host FROM _dss_host_rate_limit WHERE next_fetch_at < datetime()) AND (claimed_at IS NULL OR claimed_at < datetime('now', '-5 minutes')) LIMIT 1").fetchone()
 
     if not row:
@@ -33,40 +26,47 @@ def crawl_loop(conn):
 
         if has_more:
             time.sleep(0.1)
-            return True
+            return None
 
-        print('no more work items, ending loop')
-        return False
+        time.sleep(1)
+        return None
 
     id, job_id, host, queued_at, url, depth, claimed_at = row
-    print(row)
 
+    print('...attempting to claim item id={}'.format(id))
     # Try to claim the row -- note that another worker may have claimed it while we were waiting.
     with conn:
         if claimed_at:
             claim_row = conn.execute("UPDATE _dss_crawl_queue SET claimed_at = strftime('%Y-%m-%d %H:%M:%f') WHERE id = ? AND claimed_at = ?", [id, claimed_at])
         else:
-            print('...updating where id = {} and claimed_at IS NULL'.format(id))
             claim_row = conn.execute("UPDATE _dss_crawl_queue SET claimed_at = strftime('%Y-%m-%d %H:%M:%f') WHERE id = ? AND claimed_at IS NULL", [id])
 
         if claim_row.rowcount != 1:
-            raise Exception('TODO: handle another worker taking the work item')
-        print(claim_row)
-        print(claim_row.rowcount)
+            print('...failed to claim crawl item job_id={} id={} url={}'.format(job_id, id, url))
+            return None
 
+        # Try to update _dss_host_rate_limit
+        claim_rate_limit = conn.execute("UPDATE _dss_host_rate_limit SET next_fetch_at = strftime('%Y-%m-%d %H:%M:%f', 'now', delay_seconds || ' seconds') WHERE host = ? AND next_fetch_at < strftime('%Y-%m-%d %H:%M:%f')", [host])
 
+        if claim_rate_limit.rowcount != 1:
+            # ...we failed to get rate limit, so release the row
+            print('...failed to claim host rate limit for job_id={} host={}'.format(job_id, host))
+            conn.rollback()
+            return None
 
+    return row
 
-    # try to claim it as yours (iff it hasn't since been claimed)
+def crawl_loop(conn):
+    # Warning: This is super naive! As we get experience operating at higher volumes,
+    # may need to tweak it.
 
-    # if you claimed it, try to increment the host rate limiter
+    # Try to find a URL to crawl that (a) isn't host rate limited and (b) hasn't been
+    # recently claimed by another worker.
 
-    # if you incremented it, actually do the thing
+    row = get_next_crawl_queue_row(conn)
 
-    # otherwise, relinquish claim on URL
+    if not row:
+        return
 
-    # if no URL, check to see if we should shut down (shut down if crawl_queue is empty)
-
-    pass
-
+    print('! found work item {}'.format(row))
 
