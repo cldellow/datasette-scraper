@@ -15,13 +15,25 @@ CREATE TABLE _dss_host_rate_limit(
 -- A cache of fetched pages. This may need to exist outside of
 -- the schema migration code if we adopt https://github.com/phiresky/sqlite-zstd
 CREATE TABLE _dss_fetch_cache(
+  id integer primary key,
+
+  -- The URL that was fetched
   url text not null,
+
+  -- A hash of the request that was sent, eg url + headers
+  request_hash text not null,
+
+  -- When this was fetched from an origin server. This will also be
+  -- present in the object, but exposing it as a column makes it
+  -- easier to prune old entries.
   fetched_at text not null default (strftime('%Y-%m-%d %H:%M:%f')),
-  host text not null,
-  request_headers text not null,
-  status_code integer not null,
-  response_headers text not null,
-  body blob
+
+  -- When this was last accessed via a crawl -- can be helpful for
+  -- pruning entries that are no longer needed.
+  read_at text not null default (strftime('%Y-%m-%d %H:%M:%f')),
+
+  -- The response object; UTF-8 JSON encoded. Might be compressed.
+  object blob not null
 );
 
 -- The definition of a crawl, eg "Crawl every page at most 3 hops away from
@@ -64,10 +76,11 @@ CREATE TABLE _dss_crawl_queue_history(
   status_code integer,
   content_type text,
   size integer,
+  duration integer,
   skipped_reason text,
   check (
-    (skipped_reason is null and status_code is not null and size is not null and content_type is not null) or
-    (skipped_reason is not null and status_code is null and size is null and content_type is null)
+    (skipped_reason is null and status_code is not null and size is not null and content_type is not null and duration is not null) or
+    (skipped_reason is not null and status_code is null and size is null and content_type is null and duration is null)
   )
 );
 
@@ -95,4 +108,5 @@ CREATE TABLE _dss_extract_stats(
 );
 
 CREATE UNIQUE INDEX idx_only_one_active_job_per_crawl ON _dss_job(crawl_id) WHERE finished_at IS NULL;
+CREATE UNIQUE INDEX idx_only_one_cache_per_request ON _dss_fetch_cache(request_hash);
 """

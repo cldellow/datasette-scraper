@@ -273,7 +273,7 @@ subgraph init
 end
 
 subgraph crawl [for each URL to crawl]
-  before_fetch_url --> fetch_url
+  before_fetch_url --> fetch_cached_url -> fetch_url
 end
 
 subgraph discover [for each URL crawled]
@@ -317,16 +317,29 @@ Returns:
 > Which one you use is a matter of taste, in general, if you _never_ want the URL,
 > reject it at canonicalization time.
 
-#### `fetch_url(conn, config, url, request_headers)`
+#### `fetch_cached_url(conn, config, url, request_headers)`
 
-Fetch an HTTP response, perhaps from a cache or from the live server.
+Fetch a previously-cached HTTP response. The system will not have checked that
+there was rate limit available before calling this.
 
 Returns:
   - `None`, to indicate not handled
-  - a response object, which is a dict like: (url, request_headers, fetched_at, response_headers, status code, body bytes)
+  - a response object, which is a dict with:
+    - `fetched_at` - an ISO 8601 time like `2022-12-26 01:23:45.00`
+    - `headers` - the response headers, eg `[['content-type', 'text/html']]`
+    - `status_code` - the respones code, eg `200`
+    - `text` - the response body
 
 Once any plugin has returned a truthy value, no other plugin's `fetch_url`
 hook will be invoked.
+
+
+#### `fetch_url(conn, config, url, request_headers)`
+
+Fetch an HTTP response from the live server. The system will have checked that there
+was rate limit available before calling this.
+
+Same return type and behaviour as `fetch_cached_url`.
 
 #### `discover_urls(config, url, response)`
 

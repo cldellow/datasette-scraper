@@ -2,6 +2,7 @@ import sqlite3
 import time
 import os
 import json
+import math
 from urllib.parse import urljoin
 from datasette_scraper.plugin import pm
 from datasette_scraper import utils
@@ -69,7 +70,7 @@ def absolutize_urls(base_url, new_url):
 
     return rv[0:hash_idx]
 
-def update_crawl_stats(conn, job_id, host, response):
+def update_crawl_stats(conn, job_id, host, response, fresh):
     # Update stats
     with conn:
         conn.execute("INSERT OR IGNORE INTO _dss_job_stats(job_id, host) VALUES (?, ?)", [job_id, host])
@@ -84,7 +85,7 @@ def update_crawl_stats(conn, job_id, host, response):
             xx_column = 'fetched_4xx'
 
         maybe_fetched_fresh = ''
-        if response['fresh']:
+        if fresh:
             maybe_fetched_fresh = ', fetched_fresh = fetched_fresh + 1'
 
         conn.execute("UPDATE _dss_job_stats SET fetched = fetched + 1, {} = {} + 1{} WHERE job_id = ? AND host = ?".format(xx_column, xx_column, maybe_fetched_fresh), [job_id, host])
@@ -162,6 +163,8 @@ def crawl_loop(conn):
         utils.check_for_job_complete(conn, job_id)
         return
 
+    fresh = True
+    start = time.time()
     # fetch_url: Fetch the actual URL.
     response = pm.hook.fetch_url(conn=conn, config=config, url=url, request_headers=request_headers)
 
@@ -170,8 +173,9 @@ def crawl_loop(conn):
         utils.reject_crawl_queue_item(conn, id, 'fetch_url failed')
         utils.check_for_job_complete(conn, job_id)
         return
+    fetch_duration = math.ceil(1000 * (time.time() - start))
 
-    update_crawl_stats(conn, job_id, host, response)
+    update_crawl_stats(conn, job_id, host, response, fresh)
 
     urls = discover_urls(config, url, depth, response)
     # Try to insert these URLs into _dss_crawl_queue; skipping entries that are already
@@ -180,6 +184,6 @@ def crawl_loop(conn):
         utils.add_crawl_queue_item(conn, job_id, new_url, new_depth)
 
 
-    utils.finish_crawl_queue_item(conn, id, response)
+    utils.finish_crawl_queue_item(conn, id, response, fresh, fetch_duration)
     utils.check_for_job_complete(conn, job_id)
 

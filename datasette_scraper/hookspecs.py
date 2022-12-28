@@ -21,8 +21,12 @@ def before_fetch_url(conn, config, url, depth, request_headers):
     """Reject a URL, or modify its request headers."""
 
 @hookspec(firstresult=True)
+def fetch_cached_url(conn, config, url, request_headers):
+    """Fetch a previously cached URL."""
+
+@hookspec(firstresult=True)
 def fetch_url(conn, config, url, request_headers):
-    """Fetch a URL."""
+    """Fetch a URL live from an origin server."""
 
 @hookspec()
 def discover_urls(config, url, response):

@@ -1,9 +1,11 @@
 from ..hookspecs import hookimpl
 
+SEED_URLS = 'seed-urls'
+
 @hookimpl
 def get_seed_urls(config):
-    if 'seed-urls' in config:
-        return config['seed-urls']
+    if SEED_URLS in config:
+        return config[SEED_URLS]
 
     return []
 
@@ -19,7 +21,7 @@ def config_schema():
           }
         },
         uischema = {},
-        key = 'seed-urls',
+        key = SEED_URLS,
         group = 'Crawls',
     )
 
