@@ -20,9 +20,13 @@ def config_schema():
               'pattern': '^https?://.+'
           }
         },
-        uischema = {},
+        uischema = {
+            "type": "Control",
+            "scope": '#/properties/{}'.format(SEED_URLS),
+            'label': 'URLs'
+        },
         key = SEED_URLS,
-        group = 'Crawls',
+        group = 'Seeds',
     )
 
 @hookimpl

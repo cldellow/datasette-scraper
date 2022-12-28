@@ -7,6 +7,82 @@
 {% block content %}
 <h1>{% if dss_id %}Update Crawl {{ dss_id }} {% else %} Add Crawl {% endif %}</h1>
 
+<style>
+.category-subcategories {
+  margin-top: 1em;
+  margin-left: 1em;
+}
+
+.category-subcategories li {
+  padding: 0.5em;
+  cursor: pointer;
+  border-top-left-radius: 10px;
+  border-top-right-radius: 10px;
+  display: inline-block;
+  margin-right: 0.5em;
+}
+
+.category-subcategories li.selected {
+  background-color: #ccc;
+}
+
+.categorization-detail {
+  border: 1px solid #ccc;
+  padding: 1em;
+}
+
+[aria-label=Delete] {
+  font-size: 0;
+}
+
+[aria-label=Delete]:before {
+  content: '❌';
+  font-size: initial;
+}
+
+.array-table-layout header {
+  display: flex;
+  flex-direction: row-reverse;
+  justify-content: flex-end;
+  background-color: #eee;
+  color: #111;
+}
+
+.control:has([type=checkbox]) {
+  display: flex;
+  flex-direction: row-reverse;
+  justify-content: flex-end;
+}
+
+.control:has([type=number]) label {
+  display: inline-block;
+  min-width: 10em;
+}
+
+.array-table-layout header label {
+  margin-left: 1em;
+}
+
+.array-table-layout header button {
+  font-size: 0;
+}
+
+.array-table-layout header button:before {
+  font-size: initial;
+  content: '➕';
+}
+
+.root_properties_seed-urls thead {
+  display: none;
+}
+
+.root_properties_name label {
+  display: inline-block;
+  min-width: 5em;
+}
+</style>
+
+
 <script>
 // Seems weird that I need to provide this?
 process = {
@@ -17,8 +93,7 @@ initialData = {{ dss_default_config }};
 
 schema = {{ dss_schema }};
 
-  // {{ dss_schema2 }}
-uischema = undefined;
+uischema = {{ dss_uischema }};
 
 onChange = ({ errors, data }) => {
     console.log(errors);

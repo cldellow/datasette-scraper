@@ -17,7 +17,10 @@ def config_schema():
         schema = {
           'type': 'number',
         },
-        uischema = {},
+        uischema = {
+            "type": "Control",
+            "scope": '#/properties/{}'.format(MAX_DEPTH)
+        },
         key = MAX_DEPTH,
         group = 'Limits',
     )

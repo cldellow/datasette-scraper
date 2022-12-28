@@ -19,11 +19,15 @@ def config_schema():
     return ConfigSchema(
         schema = {
           'type': 'boolean',
-          'title': 'Ignore links that lead to different domains',
+          'title': 'Stay on same domain',
         },
-        uischema = {},
+        uischema = {
+            "type": "Control",
+            "scope": '#/properties/{}'.format(DISCOVER_ONLY_SAME_ORIGIN)
+        },
         key = DISCOVER_ONLY_SAME_ORIGIN,
-        group = 'Crawls',
+        group = 'Links',
+        sort = 0
     )
 
 @hookimpl

@@ -95,9 +95,13 @@ def config_schema():
 
           }
         },
-        uischema = {},
+        uischema = {
+            "type": "Control",
+            "scope": '#/properties/{}'.format(DISCOVER_HTML_LINKS),
+            'label': 'Where to look for new pages to crawl',
+        },
         key = DISCOVER_HTML_LINKS,
-        group = 'Crawls',
+        group = 'Links',
     )
 
 @hookimpl

@@ -22,40 +22,42 @@ def fetch_cached_url(url, request_headers):
 @hookimpl
 def config_schema():
     from .. import ConfigSchema
-    return ConfigSchema(
-        schema = {
+
+    array_object = {
+        'type': 'array',
+        'items': {
             'type': 'object',
             'properties': {
-                'rules': {
-                    'type': 'array',
-                    'items': {
-                        'type': 'object',
-                        'properties': {
-                            'url-regex': {
-                                'type': 'string',
-                            },
-                            'max-age': {
-                                'type': 'integer',
-                            }
-                        },
-                        'required': ['max-age']
-                    }
+                'url-regex': {
+                    'type': 'string',
+                    'title': 'URL Regex',
+                },
+                'max-age': {
+                    'type': 'integer',
+                    'title': "Max Age (seconds)"
                 }
             },
-            'required': ['rules']
+            'required': ['max-age']
+        }
+    }
+
+    return ConfigSchema(
+        schema = array_object,
+        uischema = {
+            "type": "Control",
+            "scope": "#/properties/{}".format(FETCH_CACHE),
+            "label": "Cache previously downloaded pages"
         },
-        uischema = {},
+
         key = FETCH_CACHE,
-        group = 'Crawls',
+        group = 'Caching',
     )
 
 @hookimpl
 def config_default_value():
-    return {
-        'rules': [
+    return [
             {
                 'url-regex': '.*',
                 'max-age': 3600
             }
         ]
-    }
