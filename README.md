@@ -292,13 +292,13 @@ Most plugins will only implement a few of these hooks.
 `scraper` is an object that gives access to the `datasette` object,
 and to some helper functions to access datas about the current crawl.
 
-#### `get_seed_urls(scraper, config)`
+#### `get_seed_urls(config)`
 
 Returns a list of strings representing seed URLs to be fetched.
 
 They will be considered to have depth of 0, i.e. seeds.
 
-#### `before_fetch_url(scraper, config, url, request_headers)`
+#### `before_fetch_url(conn, config, url, depth, request_headers)`
 
 `request_headers` is a dict, you can modify it to control what gets sent in the request.
 
@@ -317,7 +317,7 @@ Returns:
 > Which one you use is a matter of taste, in general, if you _never_ want the URL,
 > reject it at canonicalization time.
 
-#### `fetch_url(scraper, config, url, request_headers)`
+#### `fetch_url(conn, config, url, request_headers)`
 
 Fetch an HTTP response, perhaps from a cache or from the live server.
 
@@ -328,7 +328,7 @@ Returns:
 Once any plugin has returned a truthy value, no other plugin's `fetch_url`
 hook will be invoked.
 
-#### `discover_urls(scraper, config, url, response)`
+#### `discover_urls(config, url, response)`
 
 - TODO: probably this wants access to a (lazily) parsed form of the response ?
 
@@ -346,9 +346,9 @@ The URLs can be either strings, in which case they'll get enqueued as depth + 1,
 #### `canonicalize_url(config, from_url, to_url, to_url_depth)`
 
 Returns:
-  - `None` to filter URL
-  - `to_url` unchanged to no-op
+  - `False` to filter URL
   - an URL to be crawled instead
+  - `None` or `True` to no-op
 
 The URL to be crawled can be a string, or a tuple of string and depth.
 

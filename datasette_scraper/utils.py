@@ -7,6 +7,7 @@ _last_html_parser = None
 
 def get_html_parser(response):
     global _last_html
+    global _last_html_parser
 
     text = response['text']
     if text == _last_html:

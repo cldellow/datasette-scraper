@@ -1,9 +1,11 @@
 from ..hookspecs import hookimpl
 
+MAX_DEPTH = 'max-depth'
+
 @hookimpl
 def before_fetch_url(config, depth):
-    if 'max-depth' in config:
-        max_depth = config['max-depth']
+    if MAX_DEPTH in config:
+        max_depth = config[MAX_DEPTH]
 
         if depth > max_depth:
             return 'max-depth {} exceeds depth {}'.format(max_depth, depth)
@@ -16,7 +18,7 @@ def config_schema():
           'type': 'number',
         },
         uischema = {},
-        key = 'max-depth',
+        key = MAX_DEPTH,
         group = 'Limits',
     )
 

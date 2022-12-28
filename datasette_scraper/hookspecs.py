@@ -27,3 +27,7 @@ def fetch_url(conn, config, url, request_headers):
 @hookspec()
 def discover_urls(config, url, response):
     """Discover new URLs to crawl."""
+
+@hookspec()
+def canonicalize_url(config, from_url, to_url, to_url_depth):
+    """Canonicalize a discovered URL, possibly rejecting it."""

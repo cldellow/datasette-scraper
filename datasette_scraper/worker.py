@@ -60,7 +60,7 @@ def get_next_crawl_queue_row(conn):
 
     return row
 
-def canonicalize_url(base_url, new_url):
+def absolutize_urls(base_url, new_url):
     rv = urljoin(base_url, new_url)
     hash_idx = rv.find('#')
 
@@ -88,6 +88,51 @@ def update_crawl_stats(conn, job_id, host, response):
             maybe_fetched_fresh = ', fetched_fresh = fetched_fresh + 1'
 
         conn.execute("UPDATE _dss_job_stats SET fetched = fetched + 1, {} = {} + 1{} WHERE job_id = ? AND host = ?".format(xx_column, xx_column, maybe_fetched_fresh), [job_id, host])
+
+def discover_urls(config, from_url, from_depth, response):
+    urls = [new_url for urls in pm.hook.discover_urls(config=config, url=from_url, response=response) for new_url in urls]
+
+    # Normalize URLs into (url, depth) form
+    urls = [new_url if isinstance(new_url, tuple) else (new_url, from_depth + 1) for new_url in urls]
+
+    # Resolve relative paths
+    urls = [(absolutize_urls(from_url, new_url), new_depth) for (new_url, new_depth) in urls]
+
+    # Reject non HTTP/HTTPS URLs
+    urls = [new_url for new_url in urls if new_url[0].startswith('https:') or new_url[0].startswith('http:')]
+
+    new_urls = []
+    for (to_url, to_url_depth) in urls:
+        attempts = 0
+        while attempts < 10:
+            # We do max 10 canonicalization attempts to prevent infinite loops from broken
+            # plugins.
+            attempts += 1
+            results = pm.hook.canonicalize_url(config=config, from_url=from_url, to_url=to_url, to_url_depth=to_url_depth)
+
+            rewritten = False
+            for x in results:
+                if isinstance(x, str):
+                    to_url = x
+                    rewritten = True
+                    break
+                if isinstance(x, tuple):
+                    to_url = x[0]
+                    to_url_depth = x[1]
+                    rewritten = True
+                    break
+
+            if rewritten:
+                continue
+
+            if False in results:
+                # Someone rejected the URL; this wins.
+                break
+
+            new_urls.append((to_url, to_url_depth))
+
+    return set(list(new_urls))
+
 
 def crawl_loop(conn):
     print('crawl_loop running pid={}'.format(os.getpid()))
@@ -128,23 +173,7 @@ def crawl_loop(conn):
 
     update_crawl_stats(conn, job_id, host, response)
 
-    # Discover URLs
-    urls = [new_url for urls in pm.hook.discover_urls(config=config, url=url, response=response) for new_url in urls]
-
-    # Normalize URLs into (url, depth) form
-    urls = [new_url if isinstance(new_url, tuple) else (new_url, depth + 1) for new_url in urls]
-
-    # Resolve relative paths
-    urls = [(canonicalize_url(url, new_url), new_depth) for (new_url, new_depth) in urls]
-
-    # Reject non HTTP/HTTPS URLs
-    urls = [new_url for new_url in urls if new_url[0].startswith('https:') or new_url[0].startswith('http:')]
-
-    # TODO: De-dupe, taking the lowest depth URLs
-    # CONSIDER: is that necessary? might just be an optimization; enqueue_crawl_item should
-    #           be able to reject/update them.
-    urls = set(list(urls))
-
+    urls = discover_urls(config, url, depth, response)
     # Try to insert these URLs into _dss_crawl_queue; skipping entries that are already
     # present, or present in _dss_crawl_queue_history with a lower or equal depth.
     for (new_url, new_depth) in urls:
