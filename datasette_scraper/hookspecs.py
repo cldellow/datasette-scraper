@@ -23,3 +23,7 @@ def before_fetch_url(conn, config, url, depth, request_headers):
 @hookspec(firstresult=True)
 def fetch_url(conn, config, url, request_headers):
     """Fetch a URL."""
+
+@hookspec()
+def discover_urls(config, url, response):
+    """Discover new URLs to crawl."""

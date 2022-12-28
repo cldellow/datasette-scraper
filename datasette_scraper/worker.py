@@ -2,6 +2,7 @@ import sqlite3
 import time
 import os
 import json
+from urllib.parse import urljoin
 from datasette_scraper.plugin import pm
 from datasette_scraper import utils
 
@@ -59,6 +60,35 @@ def get_next_crawl_queue_row(conn):
 
     return row
 
+def canonicalize_url(base_url, new_url):
+    rv = urljoin(base_url, new_url)
+    hash_idx = rv.find('#')
+
+    if hash_idx == -1:
+        return rv
+
+    return rv[0:hash_idx]
+
+def update_crawl_stats(conn, job_id, host, response):
+    # Update stats
+    with conn:
+        conn.execute("INSERT OR IGNORE INTO _dss_job_stats(job_id, host) VALUES (?, ?)", [job_id, host])
+        xx_column = 'fetched_5xx'
+        status_code = response['status_code']
+
+        if status_code >= 200 and status_code <= 299:
+            xx_column = 'fetched_2xx'
+        elif status_code >= 300 and status_code <= 399:
+            xx_column = 'fetched_3xx'
+        elif status_code >= 400 and status_code <= 499:
+            xx_column = 'fetched_4xx'
+
+        maybe_fetched_fresh = ''
+        if response['fresh']:
+            maybe_fetched_fresh = ', fetched_fresh = fetched_fresh + 1'
+
+        conn.execute("UPDATE _dss_job_stats SET fetched = fetched + 1, {} = {} + 1{} WHERE job_id = ? AND host = ?".format(xx_column, xx_column, maybe_fetched_fresh), [job_id, host])
+
 def crawl_loop(conn):
     print('crawl_loop running pid={}'.format(os.getpid()))
     # Warning: This is super naive! As we get experience operating at higher volumes,
@@ -96,24 +126,30 @@ def crawl_loop(conn):
         utils.check_for_job_complete(conn, job_id)
         return
 
-    # Update stats
-    with conn:
-        conn.execute("INSERT OR IGNORE INTO _dss_job_stats(job_id, host) VALUES (?, ?)", [job_id, host])
-        xx_column = 'fetched_5xx'
-        status_code = response['status_code']
+    update_crawl_stats(conn, job_id, host, response)
 
-        if status_code >= 200 and status_code <= 299:
-            xx_column = 'fetched_2xx'
-        elif status_code >= 300 and status_code <= 399:
-            xx_column = 'fetched_3xx'
-        elif status_code >= 400 and status_code <= 499:
-            xx_column = 'fetched_4xx'
+    # Discover URLs
+    urls = [new_url for urls in pm.hook.discover_urls(config=config, url=url, response=response) for new_url in urls]
 
-        maybe_fetched_fresh = ''
-        if response['fresh']:
-            maybe_fetched_fresh = ', fetched_fresh = fetched_fresh + 1'
+    # Normalize URLs into (url, depth) form
+    urls = [new_url if isinstance(new_url, tuple) else (new_url, depth + 1) for new_url in urls]
 
-        conn.execute("UPDATE _dss_job_stats SET fetched = fetched + 1, {} = {} + 1{} WHERE job_id = ? AND host = ?".format(xx_column, xx_column, maybe_fetched_fresh), [job_id, host])
+    # Resolve relative paths
+    urls = [(canonicalize_url(url, new_url), new_depth) for (new_url, new_depth) in urls]
+
+    # Reject non HTTP/HTTPS URLs
+    urls = [new_url for new_url in urls if new_url[0].startswith('https:') or new_url[0].startswith('http:')]
+
+    # TODO: De-dupe, taking the lowest depth URLs
+    # CONSIDER: is that necessary? might just be an optimization; enqueue_crawl_item should
+    #           be able to reject/update them.
+    urls = set(list(urls))
+
+    # Try to insert these URLs into _dss_crawl_queue; skipping entries that are already
+    # present, or present in _dss_crawl_queue_history with a lower or equal depth.
+    for (new_url, new_depth) in urls:
+        utils.add_crawl_queue_item(conn, job_id, new_url, new_depth)
+
 
     utils.finish_crawl_queue_item(conn, id, response)
     utils.check_for_job_complete(conn, job_id)
