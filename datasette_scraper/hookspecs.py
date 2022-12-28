@@ -19,3 +19,7 @@ def get_seed_urls(config):
 @hookspec(firstresult=True)
 def before_fetch_url(conn, config, url, depth, request_headers):
     """Reject a URL, or modify its request headers."""
+
+@hookspec(firstresult=True)
+def fetch_url(conn, config, url, request_headers):
+    """Fetch a URL."""

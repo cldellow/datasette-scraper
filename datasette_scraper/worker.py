@@ -1,6 +1,7 @@
 import sqlite3
 import time
 import os
+import json
 from datasette_scraper.plugin import pm
 from datasette_scraper import utils
 
@@ -86,5 +87,18 @@ def crawl_loop(conn):
         utils.check_for_job_complete(conn, job_id)
         return
 
+    # fetch_url: Fetch the actual URL.
+    response = pm.hook.fetch_url(conn=conn, config=config, url=url, request_headers=request_headers)
 
+    if not response:
+        # Weird, this should be impossible.
+        utils.reject_crawl_queue_item(conn, id, 'fetch_url failed')
+        utils.check_for_job_complete(conn, job_id)
+        return
+
+    print('response is')
+    print(json.dumps(response))
+
+    utils.finish_crawl_queue_item(conn, id, response)
+    utils.check_for_job_complete(conn, job_id)
 
