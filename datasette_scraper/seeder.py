@@ -3,16 +3,14 @@ from urllib.parse import urlparse
 import json
 from datasette_scraper import ipc
 from datasette_scraper.plugin import pm
+from datasette_scraper.utils import get_crawl_config_for_job_id
 
 def get_crawl_config_for_job(fname, job_id):
-    con = sqlite3.connect(fname)
+    conn = sqlite3.connect(fname)
     try:
-        res = con.execute('SELECT _dss_crawl.config FROM _dss_crawl JOIN _dss_job ON _dss_job.crawl_id = _dss_crawl.id WHERE _dss_job.id = ?', [job_id])
-        config, = res.fetchone()
-        config = json.loads(config)
-        return config
+        return get_crawl_config_for_job_id(conn, job_id)
     finally:
-        con.close()
+        conn.close()
 
 def entrypoint_seeder(dss_db_name, db_map, seeder_inbox):
     dss_db_fname = db_map[dss_db_name]

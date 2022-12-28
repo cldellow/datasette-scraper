@@ -1,6 +1,8 @@
 import sqlite3
 import time
 import os
+from datasette_scraper.plugin import pm
+from datasette_scraper import utils
 
 def entrypoint_worker(dss_db_name, db_map):
     # Need to open the datasette-scraper db, find the config for the crawl associated with
@@ -25,7 +27,7 @@ def get_next_crawl_queue_row(conn):
         has_more, = conn.execute("SELECT EXISTS(SELECT * FROM _dss_crawl_queue)").fetchone()
 
         if has_more:
-            time.sleep(0.1)
+            time.sleep(1)
             return None
 
         time.sleep(1)
@@ -57,6 +59,7 @@ def get_next_crawl_queue_row(conn):
     return row
 
 def crawl_loop(conn):
+    print('crawl_loop running pid={}'.format(os.getpid()))
     # Warning: This is super naive! As we get experience operating at higher volumes,
     # may need to tweak it.
 
@@ -68,5 +71,20 @@ def crawl_loop(conn):
     if not row:
         return
 
+    id, job_id, host, queued_at, url, depth, claimed_at = row
     print('! found work item {}'.format(row))
+    config = utils.get_crawl_config_for_job_id(conn, job_id)
+
+    # before_fetch_url: Give plugins a chance to reject this URL / add
+    #  request headers.
+    request_headers = {}
+    rejected_reason = pm.hook.before_fetch_url(conn=conn, config=config, url=url, depth=depth, request_headers=request_headers)
+
+    if rejected_reason:
+        print(rejected_reason)
+        utils.reject_crawl_queue_item(conn, id, rejected_reason)
+        utils.check_for_job_complete(conn, job_id)
+        return
+
+
 

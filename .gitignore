@@ -11,3 +11,4 @@ venv
 dist
 build
 editor.bundle.js
+test.db*

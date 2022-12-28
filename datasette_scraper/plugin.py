@@ -5,6 +5,7 @@ from . import hookspecs
 
 DEFAULT_PLUGINS = (
     "datasette_scraper.plugins.seed_urls",
+    "datasette_scraper.plugins.max_depth",
 )
 
 pm = pluggy.PluginManager("datasette_scraper")

@@ -55,15 +55,20 @@ CREATE TABLE _dss_crawl_queue(
 
 -- URLs that were crawled
 CREATE TABLE _dss_crawl_queue_history(
-  job_id integer primary key references _dss_job(id) on delete cascade,
+  job_id integer not null references _dss_job(id) on delete cascade,
   host text not null,
   url text not null,
-  fetched_at text not null,
-  fetched_fresh boolean not null,
   depth integer not null,
-  status_code integer not null,
-  content_type text not null,
-  size integer not null
+  processed_at text not null,
+  fetched_fresh boolean not null,
+  status_code integer,
+  content_type text,
+  size integer,
+  skipped_reason text,
+  check (
+    (skipped_reason is null and status_code is not null and size is not null and content_type is not null) or
+    (skipped_reason is not null and status_code is null and size is null and content_type is null)
+  )
 );
 
 -- Metrics on a specific crawl
