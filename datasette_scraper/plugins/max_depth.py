@@ -8,7 +8,7 @@ def before_fetch_url(config, depth):
         max_depth = config[MAX_DEPTH]
 
         if depth > max_depth:
-            return 'max-depth {} exceeds depth {}'.format(max_depth, depth)
+            return 'max-depth {} is less than depth {}'.format(max_depth, depth)
 
 @hookimpl
 def config_schema():
