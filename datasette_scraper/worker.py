@@ -163,19 +163,28 @@ def crawl_loop(conn):
         utils.check_for_job_complete(conn, job_id)
         return
 
-    fresh = True
+    fresh = False
     start = time.time()
-    # fetch_url: Fetch the actual URL.
-    response = pm.hook.fetch_url(conn=conn, config=config, url=url, request_headers=request_headers)
-
-    if not response:
-        # Weird, this should be impossible.
-        utils.reject_crawl_queue_item(conn, id, 'fetch_url failed')
-        utils.check_for_job_complete(conn, job_id)
-        return
+    # fetch_cached_url: Fetch a previously cached URL.
+    response = pm.hook.fetch_cached_url(conn=conn, config=config, url=url, depth=depth, request_headers=request_headers)
     fetch_duration = math.ceil(1000 * (time.time() - start))
 
+    if not response:
+        fresh = True
+        start = time.time()
+        # fetch_url: Fetch the actual URL.
+        response = pm.hook.fetch_url(url=url, request_headers=request_headers)
+
+        if not response:
+            # Weird, this should be impossible.
+            utils.reject_crawl_queue_item(conn, id, 'fetch_url failed')
+            utils.check_for_job_complete(conn, job_id)
+            return
+        fetch_duration = math.ceil(1000 * (time.time() - start))
+
     update_crawl_stats(conn, job_id, host, response, fresh)
+
+    pm.hook.after_fetch_url(conn=conn, config=config, url=url, request_headers=request_headers, response=response, fresh=fresh, fetch_duration=fetch_duration)
 
     urls = discover_urls(config, url, depth, response)
     # Try to insert these URLs into _dss_crawl_queue; skipping entries that are already

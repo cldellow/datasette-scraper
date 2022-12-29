@@ -273,7 +273,7 @@ subgraph init
 end
 
 subgraph crawl [for each URL to crawl]
-  before_fetch_url --> fetch_cached_url -> fetch_url
+  before_fetch_url --> fetch_cached_url -> fetch_url -> cache_fetched_url
 end
 
 subgraph discover [for each URL crawled]
@@ -317,7 +317,7 @@ Returns:
 > Which one you use is a matter of taste, in general, if you _never_ want the URL,
 > reject it at canonicalization time.
 
-#### `fetch_cached_url(conn, config, url, request_headers)`
+#### `fetch_cached_url(conn, config, url, depth, request_headers)`
 
 Fetch a previously-cached HTTP response. The system will not have checked that
 there was rate limit available before calling this.
@@ -341,20 +341,15 @@ was rate limit available before calling this.
 
 Same return type and behaviour as `fetch_cached_url`.
 
-#### `discover_urls(config, url, response)`
+#### `after_fetch_url(conn, config, url, request_headers, response, fresh, fetch_duration)`
 
-- TODO: probably this wants access to a (lazily) parsed form of the response ?
+Do something with a fetched URL.
+
+#### `discover_urls(config, url, response)`
 
 Returns a list of URLs to crawl.
 
 The URLs can be either strings, in which case they'll get enqueued as depth + 1, or tuple of URL and depth. This can be useful for paginated index pages, where you'd like to crawl to a max depth of, say, 2, but treat all the index pages as being at depth 1.
-
-> **Note**
->
-> Sneaky plugins can abuse this hook to stash the response somewhere so
-> that future runs can avoid hitting the origin server. If link discovery
-> and extraction ever become a multiprocess thing, we'll add an explicit
-> `after_fetch_url` hook.
 
 #### `canonicalize_url(config, from_url, to_url, to_url_depth)`
 

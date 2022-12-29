@@ -15,13 +15,11 @@ CREATE TABLE _dss_host_rate_limit(
 -- A cache of fetched pages. This may need to exist outside of
 -- the schema migration code if we adopt https://github.com/phiresky/sqlite-zstd
 CREATE TABLE _dss_fetch_cache(
-  id integer primary key,
+  -- A hash of the request that was sent, eg url + headers
+  request_hash text primary key,
 
   -- The URL that was fetched
   url text not null,
-
-  -- A hash of the request that was sent, eg url + headers
-  request_hash text not null,
 
   -- When this was fetched from an origin server. This will also be
   -- present in the object, but exposing it as a column makes it
@@ -108,5 +106,4 @@ CREATE TABLE _dss_extract_stats(
 );
 
 CREATE UNIQUE INDEX idx_only_one_active_job_per_crawl ON _dss_job(crawl_id) WHERE finished_at IS NULL;
-CREATE UNIQUE INDEX idx_only_one_cache_per_request ON _dss_fetch_cache(request_hash);
 """

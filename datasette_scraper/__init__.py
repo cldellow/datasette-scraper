@@ -78,12 +78,8 @@ def extra_template_vars(datasette, request):
 
         id = 0
 
-        print(groups)
-
         category_schemas = []
         for key in sorted(groups.keys(), key=lambda x: known_groups[x]):
-            print(key)
-
             elements = sorted(groups[key], key=lambda x: x[1])
             elements = [x[0] for x in elements]
             category_schemas.append({
@@ -106,9 +102,6 @@ def extra_template_vars(datasette, request):
             ]
         }
 
-
-        # Can we get the ID from the URL?
-        print(request.path)
 
         m = re.search('^/-/scraper/crawl/([0-9]+)', request.path)
         if m:
