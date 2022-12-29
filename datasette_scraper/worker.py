@@ -27,7 +27,7 @@ def entrypoint_worker(dss_db_name, db_map):
         conn.close()
 
 def get_next_crawl_queue_row(conn):
-    row = conn.execute("SELECT id, job_id, host, queued_at, url, depth, claimed_at FROM _dss_crawl_queue WHERE host IN (SELECT host FROM _dss_host_rate_limit WHERE next_fetch_at < strftime('%Y-%m-%d %H:%M:%f')) AND (claimed_at IS NULL OR claimed_at < datetime('now', '-5 minutes')) LIMIT 1").fetchone()
+    row = conn.execute("SELECT id, job_id, host, queued_at, url, depth, claimed_at FROM _dss_crawl_queue WHERE host IN (SELECT host FROM _dss_host_rate_limit WHERE next_fetch_at < strftime('%Y-%m-%d %H:%M:%f')) AND (claimed_at IS NULL OR claimed_at < datetime('now', '-5 minutes')) ORDER BY depth, queued_at LIMIT 1").fetchone()
 
     if not row:
         # TODO: are there any rows available? If not, we should shut down.
@@ -37,7 +37,7 @@ def get_next_crawl_queue_row(conn):
             time.sleep(0.05)
             return None
 
-        time.sleep(1)
+        time.sleep(0.05)
         return None
 
     id, job_id, host, queued_at, url, depth, claimed_at = row

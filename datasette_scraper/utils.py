@@ -79,6 +79,7 @@ def add_crawl_queue_item(conn, job_id, url, depth):
         parsed = urlparse(url)
         host = parsed.hostname
 
+        #print('insert _dss_host_rate_limit host={}'.format(host))
         conn.execute('INSERT INTO _dss_host_rate_limit(host) SELECT ? WHERE NOT EXISTS(SELECT * FROM _dss_host_rate_limit WHERE host = ?)', [host, host])
 
 
