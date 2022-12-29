@@ -9,7 +9,7 @@ def before_fetch_url(conn, config, job_id):
 
         fetched, = conn.execute('SELECT COALESCE(SUM(fetched), 0) FROM _dss_job_stats WHERE job_id = ?', [job_id]).fetchone()
         if fetched > max_pages:
-            return 'max-pages {} is less than fetched pages {}'.format(max_pages, fetched)
+            return 'max-pages {} is less than fetched pages ({})'.format(max_pages, fetched)
 
 @hookimpl
 def config_schema():
@@ -24,7 +24,7 @@ def config_schema():
         },
         key = MAX_PAGES,
         group = 'Links',
-        sort = 100,
+        sort = 110,
     )
 
 @hookimpl
