@@ -290,8 +290,8 @@ init --> crawl --> discover
 
 Most plugins will only implement a few of these hooks.
 
-`scraper` is an object that gives access to the `datasette` object,
-and to some helper functions to access datas about the current crawl.
+`conn` is a `sqlite3.Connection` to the ops database.
+`config` is the crawl's config.
 
 #### `get_seed_urls(config)`
 
@@ -369,8 +369,6 @@ This hook is useful for:
 
 #### `extract_from_response(scraper, config, url, response)`
 
-- TODO: probably this wants access to a (lazily) parsed form of the response ?
-
 - TODO: do we care about trying to model relationships? Maybe we just rely
         on convention, and you have to manually extract all the tuples yourself.
 
@@ -425,11 +423,6 @@ To run the tests:
     pytest
 
 ## Questions
-
-### How can we provide a lazily parsed form of the response?
-
-In many cases, code will be operating on the same DOM tree. We should provide a way
-to access that where we lazily parse it at most once.
 
 ### Can `extract-selectors` be made user friendly?
 
