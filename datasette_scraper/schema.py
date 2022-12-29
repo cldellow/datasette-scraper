@@ -106,4 +106,7 @@ CREATE TABLE _dss_extract_stats(
 );
 
 CREATE UNIQUE INDEX idx_only_one_active_job_per_crawl ON _dss_job(crawl_id) WHERE finished_at IS NULL;
+
+CREATE INDEX idx_crawl_queue_item ON _dss_crawl_queue(job_id, url);
+CREATE INDEX idx_crawl_queue_history_item ON _dss_crawl_queue_history(job_id, url);
 """

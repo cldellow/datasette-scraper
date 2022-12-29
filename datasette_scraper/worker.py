@@ -16,6 +16,10 @@ def entrypoint_worker(dss_db_name, db_map):
 
     conn = sqlite3.connect(dss_db_fname)
 
+    # See https://www.sqlite.org/pragma.html#pragma_synchronous; this is much faster,
+    # at the expense of durability in the event of an unplanned shutdown.
+    conn.execute('pragma synchronous = normal;')
+
     try:
         while True:
             crawl_loop(conn)
@@ -30,7 +34,7 @@ def get_next_crawl_queue_row(conn):
         has_more, = conn.execute("SELECT EXISTS(SELECT * FROM _dss_crawl_queue)").fetchone()
 
         if has_more:
-            time.sleep(1)
+            time.sleep(0.05)
             return None
 
         time.sleep(1)
@@ -38,7 +42,7 @@ def get_next_crawl_queue_row(conn):
 
     id, job_id, host, queued_at, url, depth, claimed_at = row
 
-    print('...attempting to claim item id={}'.format(id))
+    #print('...attempting to claim item id={}'.format(id))
     # Try to claim the row -- note that another worker may have claimed it while we were waiting.
     with conn:
         if claimed_at:
@@ -62,7 +66,6 @@ def absolutize_urls(base_url, new_url):
     return rv[0:hash_idx]
 
 def update_crawl_stats(conn, job_id, host, response, fresh):
-    # Update stats
     with conn:
         conn.execute("INSERT OR IGNORE INTO _dss_job_stats(job_id, host) VALUES (?, ?)", [job_id, host])
         xx_column = 'fetched_5xx'
@@ -79,6 +82,8 @@ def update_crawl_stats(conn, job_id, host, response, fresh):
         if fresh:
             maybe_fetched_fresh = ', fetched_fresh = fetched_fresh + 1'
 
+        # TODO: this seems to undercount sometimes when run under high concurrency,
+        #       which likely means my mental model is wrong. Hmm.
         conn.execute("UPDATE _dss_job_stats SET fetched = fetched + 1, {} = {} + 1{} WHERE job_id = ? AND host = ?".format(xx_column, xx_column, maybe_fetched_fresh), [job_id, host])
 
 def discover_urls(config, from_url, from_depth, response):
@@ -127,7 +132,7 @@ def discover_urls(config, from_url, from_depth, response):
 
 
 def crawl_loop(conn):
-    print('crawl_loop running pid={}'.format(os.getpid()))
+    #print('crawl_loop running pid={}'.format(os.getpid()))
     # Warning: This is super naive! As we get experience operating at higher volumes,
     # may need to tweak it.
 
@@ -140,7 +145,7 @@ def crawl_loop(conn):
         return
 
     id, job_id, host, queued_at, url, depth, claimed_at = row
-    print('! found work item {}'.format(row))
+    #print('! found work item {}'.format(row))
     config = utils.get_crawl_config_for_job_id(conn, job_id)
 
     # before_fetch_url: Give plugins a chance to reject this URL / add
@@ -149,7 +154,6 @@ def crawl_loop(conn):
     rejected_reason = pm.hook.before_fetch_url(conn=conn, config=config, url=url, depth=depth, request_headers=request_headers)
 
     if rejected_reason:
-        print(rejected_reason)
         utils.reject_crawl_queue_item(conn, id, rejected_reason)
         utils.check_for_job_complete(conn, job_id)
         return
@@ -192,8 +196,9 @@ def crawl_loop(conn):
     urls = discover_urls(config, url, depth, response)
     # Try to insert these URLs into _dss_crawl_queue; skipping entries that are already
     # present, or present in _dss_crawl_queue_history with a lower or equal depth.
-    for (new_url, new_depth) in urls:
-        utils.add_crawl_queue_item(conn, job_id, new_url, new_depth)
+    now = time.time()
+    enqueued = utils.add_crawl_queue_items(conn, job_id, urls)
+    #print('enqueued {}/{} urls in {} sec'.format(enqueued, len(urls), time.time() - now))
 
 
     utils.finish_crawl_queue_item(conn, id, response, fresh, fetch_duration)

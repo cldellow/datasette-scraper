@@ -10,7 +10,7 @@ processes = []
 seeder_inbox = SimpleQueue()
 
 # TODO: this should be configurable / use a sane default
-NUM_WORKERS = 1
+NUM_WORKERS = 16
 
 def seed_crawl(job_id):
     seeder_inbox.put({ 'type': ipc.SEED_CRAWL, 'job-id': job_id })
