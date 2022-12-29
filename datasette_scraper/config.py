@@ -16,7 +16,9 @@ def ensure_wal_mode(conn):
     old_level = conn.isolation_level
     try:
         conn.isolation_level = None
-        conn.execute('PRAGMA journal_mode=WAL').fetchone()
+        mode, = conn.execute('PRAGMA journal_mode=WAL').fetchone()
+        if mode != 'wal':
+            raise Exception('unable to set PRAGMA journal_mode=WAL on connection, got {}'.format(mode))
     finally:
         conn.isolation_level = old_level
 

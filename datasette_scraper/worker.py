@@ -5,6 +5,7 @@ import json
 import math
 from urllib.parse import urljoin
 from datasette_scraper.plugin import pm
+from datasette_scraper.config import ensure_wal_mode
 from datasette_scraper import utils
 
 def entrypoint_worker(dss_db_name, db_map):
@@ -15,6 +16,7 @@ def entrypoint_worker(dss_db_name, db_map):
     dss_db_fname = db_map[dss_db_name]
 
     conn = sqlite3.connect(dss_db_fname)
+    ensure_wal_mode(conn)
 
     # See https://www.sqlite.org/pragma.html#pragma_synchronous; this is much faster,
     # at the expense of durability in the event of an unplanned shutdown.
