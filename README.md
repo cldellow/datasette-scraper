@@ -17,7 +17,7 @@
   - [selectolax](https://github.com/rushter/selectolax) for HTML parsing
   - [httpx](https://www.python-httpx.org/) for HTTP requests
   - [pluggy](https://pluggy.readthedocs.io/en/stable/) for extensibility
-  - [sqlite-zstd](https://github.com/phiresky/sqlite-zstd) for efficiently storing compressed page responses
+  - [zstandard](https://github.com/indygreg/python-zstandard) for efficiently storing compressed page responses
 - **Not for adversarial crawling**
   - Want to crawl a site that blocks bots? You're on your own
 
