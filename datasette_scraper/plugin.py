@@ -9,6 +9,7 @@ DEFAULT_PLUGINS = (
     "datasette_scraper.plugins.discover_deny",
     "datasette_scraper.plugins.discover_html_links",
     "datasette_scraper.plugins.discover_only_same_origin",
+    "datasette_scraper.plugins.canonicalize_shopify_products",
     "datasette_scraper.plugins.follow_redirects",
     "datasette_scraper.plugins.seed_urls",
     "datasette_scraper.plugins.max_depth",
