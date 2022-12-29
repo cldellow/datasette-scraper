@@ -299,7 +299,7 @@ Returns a list of strings representing seed URLs to be fetched.
 
 They will be considered to have depth of 0, i.e. seeds.
 
-#### `before_fetch_url(conn, config, url, depth, request_headers)`
+#### `before_fetch_url(conn, config, job_id, url, depth, request_headers)`
 
 `request_headers` is a dict, you can modify it to control what gets sent in the request.
 

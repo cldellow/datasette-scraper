@@ -151,7 +151,7 @@ def crawl_loop(conn):
     # before_fetch_url: Give plugins a chance to reject this URL / add
     #  request headers.
     request_headers = {}
-    rejected_reason = pm.hook.before_fetch_url(conn=conn, config=config, url=url, depth=depth, request_headers=request_headers)
+    rejected_reason = pm.hook.before_fetch_url(conn=conn, config=config, job_id=job_id, url=url, depth=depth, request_headers=request_headers)
 
     if rejected_reason:
         utils.reject_crawl_queue_item(conn, id, rejected_reason)

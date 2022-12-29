@@ -17,7 +17,7 @@ def get_seed_urls(config):
     """Get list of URLs to fetch."""
 
 @hookspec(firstresult=True)
-def before_fetch_url(conn, config, url, depth, request_headers):
+def before_fetch_url(conn, config, job_id, url, depth, request_headers):
     """Reject a URL, or modify its request headers."""
 
 @hookspec(firstresult=True)
