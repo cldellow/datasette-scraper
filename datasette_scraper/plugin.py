@@ -12,6 +12,7 @@ DEFAULT_PLUGINS = (
     "datasette_scraper.plugins.canonicalize_shopify_products",
     "datasette_scraper.plugins.follow_redirects",
     "datasette_scraper.plugins.seed_urls",
+    "datasette_scraper.plugins.seed_sitemaps",
     "datasette_scraper.plugins.max_depth",
     "datasette_scraper.plugins.max_pages",
     "datasette_scraper.plugins.max_pages_per_domain",
