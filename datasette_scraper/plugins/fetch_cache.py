@@ -101,7 +101,7 @@ def config_schema():
         uischema = {
             "type": "Control",
             "scope": "#/properties/{}".format(FETCH_CACHE),
-            "label": "Cache previously downloaded pages"
+            "label": "Re-use previously downloaded pages"
         },
 
         key = FETCH_CACHE,

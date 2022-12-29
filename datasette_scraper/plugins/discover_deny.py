@@ -39,6 +39,7 @@ def config_schema():
             'label': "Never crawl URLs matching these regexes"
         },
         key = DISCOVER_DENY,
+        sort = 3000,
         group = 'Links',
     )
 

@@ -92,15 +92,15 @@ def config_schema():
                   }
               },
               'required': ['selector']
-
           }
         },
         uischema = {
             "type": "Control",
             "scope": '#/properties/{}'.format(DISCOVER_HTML_LINKS),
-            'label': 'Where to look for new pages to crawl',
+            'label': 'Find links in HTML content',
         },
         key = DISCOVER_HTML_LINKS,
+        sort = 2000,
         group = 'Links',
     )
 

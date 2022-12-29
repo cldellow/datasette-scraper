@@ -35,8 +35,6 @@ def extra_template_vars(datasette, request):
     known_groups = {
         'Seeds': 1,
         'Links': 2,
-        'Filters': 3,
-        'Limits': 4,
         'Caching': 5,
         'Extracting': 6,
         'Other': 7,

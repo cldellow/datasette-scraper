@@ -22,7 +22,8 @@ def config_schema():
             "scope": '#/properties/{}'.format(MAX_DEPTH)
         },
         key = MAX_DEPTH,
-        group = 'Limits',
+        group = 'Links',
+        sort = 100,
     )
 
 @hookimpl
