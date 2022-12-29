@@ -273,7 +273,8 @@ subgraph init
 end
 
 subgraph crawl [for each URL to crawl]
-  before_fetch_url --> fetch_cached_url --> fetch_url --> cache_fetched_url
+  before_fetch_url --> fetch_cached_url --> fetch_url --> after_fetch_url
+  fetch_cached_url --> after_fetch_url
 end
 
 subgraph discover [for each URL crawled]
