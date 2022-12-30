@@ -1,6 +1,5 @@
 import React, { useState, useMemo } from 'react';
 import { JsonForms } from '@jsonforms/react';
-// import { materialCells, materialRenderers } from '@jsonforms/material-renderers';
 import { vanillaCells, vanillaRenderers } from '@jsonforms/vanilla-renderers';
 
 
@@ -15,8 +14,6 @@ const App = () => {
         schema,
         uischema,
         data,
-//        renderers: materialRenderers,
-//        cells: materialCells,
         renderers: vanillaRenderers,
         cells: vanillaCells,
         onChange: ({ errors, data }) => {
