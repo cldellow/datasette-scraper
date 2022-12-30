@@ -67,17 +67,6 @@ def add_crawl_queue_items(conn, job_id, urls):
 
 def add_crawl_queue_item(conn, job_id, url, depth):
     with conn:
-        crawled, = conn.execute('SELECT EXISTS(SELECT * FROM _dss_crawl_queue_history WHERE job_id = ? AND url = ?)', [job_id, url]).fetchone()
-
-        if crawled:
-            return 0
-
-        pending, = conn.execute('SELECT EXISTS(SELECT * FROM _dss_crawl_queue WHERE job_id = ? AND url = ?)', [job_id, url]).fetchone()
-
-        if pending:
-            return 0
-
-
         parsed = urlparse(url)
         host = parsed.hostname
 
@@ -85,9 +74,9 @@ def add_crawl_queue_item(conn, job_id, url, depth):
         conn.execute('INSERT INTO _dss_host_rate_limit(host) SELECT ? WHERE NOT EXISTS(SELECT * FROM _dss_host_rate_limit WHERE host = ?)', [host, host])
 
 
-        conn.execute('INSERT INTO _dss_crawl_queue(job_id, host, url, depth) VALUES (?, ?, ?, ?)', [job_id, host, url, depth])
+        cur = conn.execute('INSERT INTO _dss_crawl_queue(job_id, host, url, depth) SELECT ?, ?, ?, ? WHERE NOT EXISTS(SELECT * FROM _dss_crawl_queue WHERE job_id = ? AND url = ?) AND NOT EXISTS(SELECT * FROM _dss_crawl_queue_history WHERE job_id = ? AND url = ?)', [job_id, host, url, depth, job_id, url, job_id, url])
 
-        return 1
+        return cur.rowcount
 
 
 def reject_crawl_queue_item(conn, id, reason):

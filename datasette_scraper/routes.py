@@ -114,6 +114,8 @@ async def scraper_crawl_id_edit(datasette, request):
 routes = [
     (r"^/-/scraper/upsert$", scraper_upsert),
     (r"^/-/scraper/crawl/(?P<id>[0-9]+)$", scraper_crawl_id),
+    # CONSIDER: Should we hijack the usual Datasette table / row routes?
+    # (r"^/test/_dss_crawl/(?P<id>1)$", scraper_crawl_id),
     (r"^/-/scraper/crawl/(?P<id>[0-9]+)/start$", scraper_crawl_id_start),
     (r"^/-/scraper/crawl/(?P<id>[0-9]+)/cancel$", scraper_crawl_id_cancel),
     (r"^/-/scraper/crawl/(?P<id>[0-9]+)/edit$", scraper_crawl_id_edit),

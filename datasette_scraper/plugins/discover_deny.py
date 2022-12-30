@@ -10,7 +10,6 @@ def canonicalize_url(config, from_url, to_url, to_url_depth):
     if not DISCOVER_DENY in config:
         return
 
-    
     reject_res = config[DISCOVER_DENY]
 
     for reject_re in reject_res:

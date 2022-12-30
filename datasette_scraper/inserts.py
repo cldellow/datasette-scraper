@@ -12,7 +12,10 @@ def quote(k):
 def remove_sigils(keys):
     return [remove_sigil(key) for key in keys]
 
-def handle(factory, dbname, tablename, obj):
+def handle(counts, factory, dbname, tablename, obj):
+    inserted = 0
+    updated = 0
+
     conn = factory(dbname)
 
     args = [
@@ -47,7 +50,17 @@ def handle(factory, dbname, tablename, obj):
         retry = False
         try:
             #print('stmt={}, values={}'.format(stmt, bindings))
-            cur = conn.execute(stmt, bindings)
+
+            cur = conn.cursor()
+            # This SELECT 1 is a little hacky - we need to force the cursor to show
+            # us the lastrowid inserted on this connection.
+            cur.execute('SELECT 1')
+            lastrowid = cur.lastrowid
+            cur.execute(stmt, bindings)
+            if cur.lastrowid and cur.lastrowid != lastrowid:
+                inserted += 1
+            else:
+                updated += 1
         except sqlite3.OperationalError as e:
             if e.args[0] == 'no such table: {}'.format(tablename):
                 colspec = ',\n'.join(['  {} ANY {}'.format(quote(remove_sigil(k)), 'NOT NULL' if k[-1] != '?' else '')  for k in keys])
@@ -75,8 +88,17 @@ def handle(factory, dbname, tablename, obj):
             else:
                 raise
 
+    tpl = (dbname, tablename)
+
+    if tpl in counts:
+        counts[tpl] = (counts[tpl][0] + inserted, counts[tpl][1] + updated)
+    else:
+        counts[tpl] = (inserted, updated)
+
 
 def handle_insert(factory, insert):
+    counts = {}
+
     for k, v in insert.items():
         dbname = None
 
@@ -84,7 +106,9 @@ def handle_insert(factory, insert):
             dbname = k
             for k, v in v.items():
                 for obj in v:
-                    handle(factory, dbname, k, obj)
+                    handle(counts, factory, dbname, k, obj)
         else:
             for obj in v:
-                handle(factory, dbname, k, obj)
+                handle(counts, factory, dbname, k, obj)
+
+    return counts

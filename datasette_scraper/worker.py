@@ -13,7 +13,7 @@ def entrypoint_worker(dss_db_name, db_map):
 
     try:
         while True:
-            crawl_loop(factory, conn)
+            crawl_loop(dss_db_name, factory, conn)
     finally:
         conn.close()
 
@@ -35,7 +35,7 @@ def get_next_crawl_queue_row(conn):
             claim_row = conn.execute("UPDATE _dss_crawl_queue SET claimed_at = strftime('%Y-%m-%d %H:%M:%f') WHERE id = ? AND claimed_at IS NULL", [id])
 
         if claim_row.rowcount != 1:
-            print('...failed to claim crawl item job_id={} id={} url={}'.format(job_id, id, url))
+            #print('...failed to claim crawl item job_id={} id={} url={}'.format(job_id, id, url))
             return None
 
     return row
@@ -111,11 +111,12 @@ def discover_urls(config, from_url, from_depth, response):
                 break
 
             new_urls.append((to_url, to_url_depth))
+            break
 
     return set(list(new_urls))
 
 
-def crawl_loop(factory, conn):
+def crawl_loop(dss_db_name, factory, conn):
     #print('crawl_loop running pid={}'.format(os.getpid()))
     # Warning: This is super naive! As we get experience operating at higher volumes,
     # may need to tweak it.
@@ -186,7 +187,10 @@ def crawl_loop(factory, conn):
 
     for insert in pm.hook.extract_from_response(config=config, url=url, response=response):
         if insert:
-            inserts.handle_insert(factory, insert)
+            rv = inserts.handle_insert(factory, insert)
+
+            for ((dbname, tablename), (inserted, updated)) in rv.items():
+                conn.execute('INSERT INTO _dss_extract_stats(job_id, database, tbl, inserted, updated) VALUES (?, ?, ?, ?, ?) ON CONFLICT(job_id, database, tbl) DO UPDATE SET inserted = inserted + ?, updated = updated + ?', [job_id, dbname or dss_db_name, tablename, inserted, updated, inserted, updated])
 
 
     utils.finish_crawl_queue_item(conn, id, response, fresh, fetch_duration)

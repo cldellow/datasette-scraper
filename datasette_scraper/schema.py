@@ -99,9 +99,8 @@ CREATE TABLE _dss_extract_stats(
   job_id integer not null references _dss_job(id) on delete cascade,
   database text not null,
   tbl text not null,
-  added integer not null default 0,
-  modified integer not null default 0,
-  same integer not null default 0,
+  inserted integer not null default 0,
+  updated integer not null default 0,
   primary key (job_id, database, tbl)
 );
 
