@@ -29,6 +29,37 @@ def startup(datasette):
     return inner
 
 @datasette.hookimpl
+def get_metadata(datasette, key, database, table):
+    rv = {
+        'databases': {}
+    }
+
+    db_name = get_database(datasette).name
+
+    rv['databases'][db_name] = {
+        'tables': {
+            '_dss_crawl_queue': {
+                'sort_desc': 'id'
+            },
+            '_dss_crawl_queue_history': {
+                'sort_desc': 'processed_at'
+            },
+            '_dss_fetch_cache': {
+                'sort_desc': 'fetched_at'
+            },
+            '_dss_job': {
+                'sort_desc': 'id'
+            },
+            '_dss_job_stats': {
+                'sort_desc': 'job_id'
+            },
+
+        }
+    }
+
+    return rv
+
+@datasette.hookimpl
 def extra_template_vars(datasette, request):
     """Add dss_schema, dss_default_config, dss_id variables."""
 
