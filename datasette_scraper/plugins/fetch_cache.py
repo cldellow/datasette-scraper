@@ -67,6 +67,7 @@ def after_fetch_url(conn, config, url, request_headers, response, fresh, fetch_d
     fetched_at = response['fetched_at']
 
     hash = request_hash(url, request_headers)
+    response['_request_hash'] = hash
 
     object = json.dumps(response).encode('utf-8')
     object = compressor.compress(object)

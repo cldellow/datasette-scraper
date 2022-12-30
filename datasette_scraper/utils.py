@@ -96,7 +96,7 @@ def finish_crawl_queue_item(conn, id, response, fresh, fetch_duration):
             content_type = header[1].split(';')[0]
 
     with conn:
-        conn.execute("INSERT INTO _dss_crawl_queue_history(job_id, host, url, depth, processed_at, fetched_fresh, status_code, content_type, size, duration) SELECT job_id, host, url, depth, strftime('%Y-%m-%d %H:%M:%f'), ?, ?, ?, ?, ? FROM _dss_crawl_queue WHERE id = ?", [fresh, status_code, content_type, size, fetch_duration, id])
+        conn.execute("INSERT INTO _dss_crawl_queue_history(job_id, host, url, depth, processed_at, fetched_fresh, status_code, content_type, size, duration, request_hash) SELECT job_id, host, url, depth, strftime('%Y-%m-%d %H:%M:%f'), ?, ?, ?, ?, ?, ? FROM _dss_crawl_queue WHERE id = ?", [fresh, status_code, content_type, size, fetch_duration, response['_request_hash'] if '_request_hash' in response else None, id])
         conn.execute("DELETE FROM _dss_crawl_queue WHERE id = ?", [id])
 
 def check_for_job_complete(conn, job_id):

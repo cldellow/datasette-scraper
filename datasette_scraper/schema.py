@@ -76,6 +76,7 @@ CREATE TABLE _dss_crawl_queue_history(
   size integer,
   duration integer,
   skipped_reason text,
+  request_hash text references _dss_fetch_cache(request_hash) on delete cascade,
   check (
     (skipped_reason is null and status_code is not null and size is not null and content_type is not null and duration is not null) or
     (skipped_reason is not null and status_code is null and size is null and content_type is null and duration is null)
