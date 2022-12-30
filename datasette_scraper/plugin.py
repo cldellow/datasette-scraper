@@ -16,6 +16,7 @@ DEFAULT_PLUGINS = (
     "datasette_scraper.plugins.max_depth",
     "datasette_scraper.plugins.max_pages",
     "datasette_scraper.plugins.max_pages_per_domain",
+    "datasette_scraper.plugins.extract_links",
 )
 
 pm = pluggy.PluginManager("datasette_scraper")

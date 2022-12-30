@@ -1,30 +1,19 @@
-import sqlite3
 import time
 import os
 import json
 import math
 from urllib.parse import urljoin
 from datasette_scraper.plugin import pm
-from datasette_scraper.config import ensure_wal_mode
-from datasette_scraper import utils
+from datasette_scraper import utils, inserts
 
 def entrypoint_worker(dss_db_name, db_map):
-    # Need to open the datasette-scraper db, find the config for the crawl associated with
-    # the job, then run the get_seed_urls hooks, then insert those into the
-    # _dss_crawl_queue table
+    factory = utils.lazy_connection_factory(dss_db_name, db_map)
 
-    dss_db_fname = db_map[dss_db_name]
-
-    conn = sqlite3.connect(dss_db_fname)
-    ensure_wal_mode(conn)
-
-    # See https://www.sqlite.org/pragma.html#pragma_synchronous; this is much faster,
-    # at the expense of durability in the event of an unplanned shutdown.
-    conn.execute('pragma synchronous = normal;')
+    conn = factory(None)
 
     try:
         while True:
-            crawl_loop(conn)
+            crawl_loop(factory, conn)
     finally:
         conn.close()
 
@@ -32,13 +21,6 @@ def get_next_crawl_queue_row(conn):
     row = conn.execute("SELECT id, job_id, host, queued_at, url, depth, claimed_at FROM _dss_crawl_queue WHERE host IN (SELECT host FROM _dss_host_rate_limit WHERE next_fetch_at < strftime('%Y-%m-%d %H:%M:%f')) AND (claimed_at IS NULL OR claimed_at < datetime('now', '-5 minutes')) ORDER BY depth, queued_at LIMIT 1").fetchone()
 
     if not row:
-        # TODO: are there any rows available? If not, we should shut down.
-        has_more, = conn.execute("SELECT EXISTS(SELECT * FROM _dss_crawl_queue)").fetchone()
-
-        if has_more:
-            time.sleep(0.05)
-            return None
-
         time.sleep(0.05)
         return None
 
@@ -133,7 +115,7 @@ def discover_urls(config, from_url, from_depth, response):
     return set(list(new_urls))
 
 
-def crawl_loop(conn):
+def crawl_loop(factory, conn):
     #print('crawl_loop running pid={}'.format(os.getpid()))
     # Warning: This is super naive! As we get experience operating at higher volumes,
     # may need to tweak it.
@@ -202,7 +184,10 @@ def crawl_loop(conn):
     enqueued = utils.add_crawl_queue_items(conn, job_id, urls)
     #print('enqueued {}/{} urls in {} sec'.format(enqueued, len(urls), time.time() - now))
 
+    for insert in pm.hook.extract_from_response(config=config, url=url, response=response):
+        if insert:
+            inserts.handle_insert(factory, insert)
+
 
     utils.finish_crawl_queue_item(conn, id, response, fresh, fetch_duration)
     utils.check_for_job_complete(conn, job_id)
-

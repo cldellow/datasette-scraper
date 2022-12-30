@@ -1,3 +1,5 @@
+from datasette_scraper.config import ensure_wal_mode
+import sqlite3
 import json
 from more_itertools import batched
 from selectolax.parser import HTMLParser
@@ -115,3 +117,26 @@ def check_for_job_complete(conn, job_id):
         if not more_to_do:
             conn.execute("UPDATE _dss_job SET status = 'done', finished_at = strftime('%Y-%m-%d %H:%M:%f') WHERE id = ?", [job_id])
 
+def lazy_connection_factory(default, db_map):
+    conns = {}
+
+    def get_db(name):
+        if name is None:
+            name = default
+
+        if not name in db_map:
+            raise Exception('unknown database name: {}'.format(name))
+
+        if name in conns:
+            return conns[name]
+
+        conn = sqlite3.connect(db_map[name])
+        ensure_wal_mode(conn)
+
+        # See https://www.sqlite.org/pragma.html#pragma_synchronous; this is much faster,
+        # at the expense of durability in the event of an unplanned shutdown.
+        conn.execute('pragma synchronous = normal;')
+        conns[name] = conn
+        return conn
+
+    return get_db

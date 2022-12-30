@@ -39,3 +39,7 @@ def discover_urls(config, url, response):
 @hookspec()
 def canonicalize_url(config, from_url, to_url, to_url_depth):
     """Canonicalize a discovered URL, possibly rejecting it."""
+
+@hookspec()
+def extract_from_response(config, url, response):
+    """Extract some table rows from the response."""
