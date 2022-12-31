@@ -96,7 +96,7 @@ async def scraper_crawl_id_cancel(datasette, request):
 
     await db.execute_write_fn(cancel)
 
-    return redirect_to_crawl(datasette, id)
+    return redirect_to_crawl(datasette, crawl_id)
 
 
 async def scraper_crawl_id_edit(datasette, request):
