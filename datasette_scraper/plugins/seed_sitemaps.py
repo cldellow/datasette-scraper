@@ -1,9 +1,11 @@
+import re
 from ..hookspecs import hookimpl
 from .seed_urls import SEED_URLS
 from ..utils import get_html_parser
 from urllib.parse import urlparse
 
 SEED_SITEMAPS = 'seed-sitemaps'
+cdata_re = re.compile('<!--\\[CDATA\\[(.+)]]-->')
 
 @hookimpl
 def get_seed_urls(config):
@@ -38,6 +40,23 @@ def get_seed_urls(config):
 
     return rv
 
+
+
+def extract_text(node):
+    # selectolax wraps CDATA declarations in comments
+    url = node.text()
+    if url:
+        return url
+
+    child = node.child
+
+    if child and child.tag == '_comment':
+        m = cdata_re.search(child.html)
+
+        if m:
+            return m.group(1)
+
+
 @hookimpl
 def discover_urls(config, url, response):
     if not SEED_SITEMAPS in config or not config[SEED_SITEMAPS]:
@@ -54,12 +73,12 @@ def discover_urls(config, url, response):
         parsed = get_html_parser(response)
 
         for node in parsed.css('sitemapindex sitemap loc'):
-            url = node.text()
+            url = extract_text(node)
             if url:
                 rv.append((url, 0))
 
         for node in parsed.css('urlset url loc'):
-            url = node.text()
+            url = extract_text(node)
             if url:
                 rv.append((url, 1))
 
