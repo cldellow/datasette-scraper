@@ -40,8 +40,10 @@ def prepare_jinja2_environment(env, datasette):
         try:
             if path.startswith('table-') and path.endswith('-dss_crawl.html'):
                 path = 'table-dss_crawl.html'
-            if path.startswith('row-') and path.endswith('-dss_crawl.html'):
+            elif path.startswith('row-') and path.endswith('-dss_crawl.html'):
                 path = 'row-dss_crawl.html'
+            elif path.startswith('table-') and path.endswith('-dss_job.html'):
+                path = 'table-dss_job.html'
 
             template_path = os.path.abspath(os.path.join(__file__, '..', 'templates', path))
             print(path)
