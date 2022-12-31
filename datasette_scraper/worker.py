@@ -119,7 +119,6 @@ def discover_urls(config, from_url, from_depth, response):
 
     return set(list(new_urls))
 
-
 def crawl_loop(dss_db_name, factory, conn):
     #print('crawl_loop running pid={}'.format(os.getpid()))
     # Warning: This is super naive! As we get experience operating at higher volumes,
@@ -184,6 +183,9 @@ def crawl_loop(dss_db_name, factory, conn):
 
         fetch_duration = math.ceil(1000 * (time.time() - start))
 
+    # TODO: can we batch these updates? on a 20K crawl, I see a 15% savings if we don't
+    #       call this. Since this is just statistics reporting, it'd be safe to defer
+    #       writing, eg at most once every 5 seconds
     update_crawl_stats(conn, job_id, host, response, fresh)
 
     pm.hook.after_fetch_url(conn=conn, config=config, url=url, request_headers=request_headers, response=response, fresh=fresh, fetch_duration=fetch_duration)
