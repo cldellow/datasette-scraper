@@ -172,6 +172,12 @@ def crawl_loop(dss_db_name, factory, conn):
             utils.reject_crawl_queue_item(conn, id, 'fetch_url failed')
             utils.check_for_job_complete(conn, job_id)
             return
+
+        if isinstance(response, Exception):
+            utils.reject_crawl_queue_item(conn, id, repr(response))
+            utils.check_for_job_complete(conn, job_id)
+            return
+
         fetch_duration = math.ceil(1000 * (time.time() - start))
 
     update_crawl_stats(conn, job_id, host, response, fresh)
