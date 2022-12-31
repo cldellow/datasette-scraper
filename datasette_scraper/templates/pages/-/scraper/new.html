@@ -8,6 +8,8 @@
 <h1>{% if dss_id %}Update Crawl {{ dss_id }} {% else %} Add Crawl {% endif %}</h1>
 
 <style>
+#editor { margin-bottom: 1em; }
+
 .category-subcategories {
   margin-top: 1em;
   margin-left: 1em;
@@ -204,7 +206,7 @@ onChange = ({ errors, data }) => {
   <input type="hidden" name="csrftoken" value="{{ csrftoken() }}">
   <input id='scraper_id' type='hidden' name='id' value='{{ dss_id }}'/>
   <input id='scraper_config' type='hidden' name='config' value=''/>
-  <button id='scraper_submit' type='submit'>{% if dss_id %}Save{% else %}Add{% endif %} Crawl</button>
+  <input id='scraper_submit' type='submit' value='{% if dss_id %}Save{% else %}Add{% endif %} Crawl'>
   <script src='/-/static-plugins/datasette_scraper/editor.bundle.js'></script>
 </form>
 

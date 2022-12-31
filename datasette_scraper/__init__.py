@@ -2,6 +2,7 @@ import datasette
 import html
 from jinja2 import FunctionLoader
 import re
+import os
 import json
 from .config import get_database, ensure_schema
 from .plugin import pm
@@ -36,13 +37,21 @@ class MyFunctionLoader(FunctionLoader):
 @datasette.hookimpl
 def prepare_jinja2_environment(env, datasette):
     def load_func(path):
-        print('template {}'.format(path))
-        return None
-#        try:
-#            code = datasette._edit_templates[path]
-#            return code, path, lambda: True
-#        except KeyError:
-#            return None
+        try:
+            if path.startswith('table-') and path.endswith('-dss_crawl.html'):
+                path = 'table-dss_crawl.html'
+            template_path = os.path.abspath(os.path.join(__file__, '..', 'templates', path))
+            print(path)
+            print(template_path)
+
+            f = open(template_path, 'r')
+            contents = f.read()
+            f.close()
+
+            # TODO: this should return True in prod, I think?
+            return contents, path, lambda: False
+        except FileNotFoundError:
+            return None
 
     env.loader.loaders.insert(0, MyFunctionLoader(load_func))
 
@@ -172,4 +181,3 @@ def extra_template_vars(datasette, request):
 @datasette.hookimpl
 def register_routes():
     return routes
-

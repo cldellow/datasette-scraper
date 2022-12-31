@@ -11,6 +11,10 @@ async def crawl_exists(datasette, crawl_id):
 
     return False
 
+def redirect_to_crawl(datasette, id):
+    db_name = get_database(datasette).name
+    return Response.redirect('/{}/dss_crawl/{}'.format(db_name, id))
+
 async def scraper_upsert(datasette, request):
     if request.method != 'POST':
         return Response('Unexpected method', status=405)
@@ -31,7 +35,7 @@ async def scraper_upsert(datasette, request):
     else:
         await db.execute_write('UPDATE dss_crawl SET name = ?, config = ? WHERE id = ?', [name, json.dumps(config), id], block=True)
 
-    return Response.redirect('/-/scraper/crawl/{}'.format(id))
+    return redirect_to_crawl(datasette, id)
 
 async def scraper_crawl_id(datasette, request):
     if request.method != 'GET':
@@ -68,7 +72,7 @@ async def scraper_crawl_id_start(datasette, request):
 
     seed_crawl(job_id)
 
-    return Response.redirect('/-/scraper/crawl/{}'.format(id))
+    return redirect_to_crawl(datasette, id)
 
 async def scraper_crawl_id_cancel(datasette, request):
     if request.method != 'POST':
@@ -92,7 +96,7 @@ async def scraper_crawl_id_cancel(datasette, request):
 
     await db.execute_write_fn(cancel)
 
-    return Response.redirect('/-/scraper/crawl/{}'.format(crawl_id))
+    return redirect_to_crawl(datasette, id)
 
 
 async def scraper_crawl_id_edit(datasette, request):
