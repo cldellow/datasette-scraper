@@ -5,7 +5,7 @@ from .workers import seed_crawl
 
 async def crawl_exists(datasette, crawl_id):
     db = get_database(datasette)
-    rv = await db.execute('SELECT id FROM _dss_crawl WHERE id = ?', [crawl_id])
+    rv = await db.execute('SELECT id FROM dss_crawl WHERE id = ?', [crawl_id])
     for row in rv:
         return True
 
@@ -26,10 +26,10 @@ async def scraper_upsert(datasette, request):
     db = get_database(datasette)
 
     if not id:
-        rv = await db.execute_write('INSERT INTO _dss_crawl(name, config) VALUES (?, ?)', [name, json.dumps(config)], block=True)
+        rv = await db.execute_write('INSERT INTO dss_crawl(name, config) VALUES (?, ?)', [name, json.dumps(config)], block=True)
         id = rv.lastrowid
     else:
-        await db.execute_write('UPDATE _dss_crawl SET name = ?, config = ? WHERE id = ?', [name, json.dumps(config), id], block=True)
+        await db.execute_write('UPDATE dss_crawl SET name = ?, config = ? WHERE id = ?', [name, json.dumps(config), id], block=True)
 
     return Response.redirect('/-/scraper/crawl/{}'.format(id))
 
@@ -61,10 +61,10 @@ async def scraper_crawl_id_start(datasette, request):
 
     db = get_database(datasette)
 
-    rv = await db.execute_write("INSERT INTO _dss_job(crawl_id) VALUES (?)", [id], block=True);
+    rv = await db.execute_write("INSERT INTO dss_job(crawl_id) VALUES (?)", [id], block=True);
     job_id = rv.lastrowid
 
-    # TODO: handle UNIQUE constraint failed: _dss_job.crawl_id
+    # TODO: handle UNIQUE constraint failed: dss_job.crawl_id
 
     seed_crawl(job_id)
 
@@ -81,12 +81,12 @@ async def scraper_crawl_id_cancel(datasette, request):
 
     def cancel(conn):
         with conn:
-            rv = conn.execute('SELECT id FROM _dss_job WHERE crawl_id = ? AND finished_at IS NULL', [crawl_id])
+            rv = conn.execute('SELECT id FROM dss_job WHERE crawl_id = ? AND finished_at IS NULL', [crawl_id])
             job_id, = rv.fetchone()
 
             if job_id:
-                conn.execute("UPDATE _dss_job SET finished_at = strftime('%Y-%m-%d %H:%M:%f') WHERE id = ?", [job_id])
-                conn.execute("DELETE FROM _dss_crawl_queue WHERE job_id = ?", [job_id])
+                conn.execute("UPDATE dss_job SET finished_at = strftime('%Y-%m-%d %H:%M:%f') WHERE id = ?", [job_id])
+                conn.execute("DELETE FROM dss_crawl_queue WHERE job_id = ?", [job_id])
 
     db = get_database(datasette)
 
@@ -115,7 +115,7 @@ routes = [
     (r"^/-/scraper/upsert$", scraper_upsert),
     (r"^/-/scraper/crawl/(?P<id>[0-9]+)$", scraper_crawl_id),
     # CONSIDER: Should we hijack the usual Datasette table / row routes?
-    # (r"^/test/_dss_crawl/(?P<id>1)$", scraper_crawl_id),
+    # (r"^/test/dss_crawl/(?P<id>1)$", scraper_crawl_id),
     (r"^/-/scraper/crawl/(?P<id>[0-9]+)/start$", scraper_crawl_id_start),
     (r"^/-/scraper/crawl/(?P<id>[0-9]+)/cancel$", scraper_crawl_id_cancel),
     (r"^/-/scraper/crawl/(?P<id>[0-9]+)/edit$", scraper_crawl_id_edit),

@@ -10,7 +10,7 @@ License: MIT.
 """
 
 # 2022-12-26: cldellow: This is patched from the original. It only
-#                       considers db objects that begin with _dss_.
+#                       considers db objects that begin with dss_.
 
 import logging
 import re
@@ -128,14 +128,14 @@ class DBMigrator:
         # modify it so it does match where possible.
         pristine_tables = dict(self.pristine.execute("""\
             SELECT name, sql FROM sqlite_master
-            WHERE type = \"table\" AND name != \"sqlite_sequence\" AND tbl_name LIKE \"_dss_%\"""").fetchall())
+            WHERE type = \"table\" AND name != \"sqlite_sequence\" AND tbl_name LIKE \"dss_%\"""").fetchall())
         pristine_indices = dict(self.pristine.execute("""\
             SELECT name, sql FROM sqlite_master
-            WHERE type = \"index\" AND tbl_name LIKE \"_dss_%\"""").fetchall())
+            WHERE type = \"index\" AND tbl_name LIKE \"dss_%\"""").fetchall())
 
         tables = dict(self.db.execute("""\
             SELECT name, sql FROM sqlite_master
-            WHERE type = \"table\" AND name != \"sqlite_sequence\" AND tbl_name LIKE \"_dss_%\"""").fetchall())
+            WHERE type = \"table\" AND name != \"sqlite_sequence\" AND tbl_name LIKE \"dss_%\"""").fetchall())
 
         new_tables = set(pristine_tables.keys()) - set(tables.keys())
         removed_tables = set(tables.keys()) - set(pristine_tables.keys())

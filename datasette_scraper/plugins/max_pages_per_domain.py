@@ -11,7 +11,7 @@ def before_fetch_url(conn, config, job_id, url):
         parsed = urlparse(url)
         host = parsed.hostname
 
-        fetched, = conn.execute('SELECT COALESCE(SUM(fetched), 0) FROM _dss_job_stats WHERE job_id = ? AND host = ?', [job_id, host]).fetchone()
+        fetched, = conn.execute('SELECT COALESCE(SUM(fetched), 0) FROM dss_job_stats WHERE job_id = ? AND host = ?', [job_id, host]).fetchone()
         if fetched > max_pages:
             return 'max-pages-per-domain {} is less than fetched pages for domain {} ({})'.format(max_pages, host, fetched)
 

@@ -37,11 +37,11 @@ def entrypoint_seeder(dss_db_name, db_map, seeder_inbox):
                     url = urlparse(seed)
                     hostname = url.hostname
                     hosts.append(hostname)
-                    con.execute('INSERT INTO _dss_crawl_queue(job_id, host, url, depth) VALUES (?, ?, ?, 0)', [job_id, hostname, seed])
+                    con.execute('INSERT INTO dss_crawl_queue(job_id, host, url, depth) VALUES (?, ?, ?, 0)', [job_id, hostname, seed])
 
                 for host in set(hosts):
-                    con.execute('INSERT INTO _dss_host_rate_limit(host) SELECT ? WHERE NOT EXISTS(SELECT * FROM _dss_host_rate_limit WHERE host = ?)', [host, host])
+                    con.execute('INSERT INTO dss_host_rate_limit(host) SELECT ? WHERE NOT EXISTS(SELECT * FROM dss_host_rate_limit WHERE host = ?)', [host, host])
 
-                con.execute("UPDATE _dss_job SET status = 'running' WHERE id = ?", [job_id])
+                con.execute("UPDATE dss_job SET status = 'running' WHERE id = ?", [job_id])
         finally:
             con.close()

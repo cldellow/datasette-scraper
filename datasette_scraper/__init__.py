@@ -1,5 +1,6 @@
 import datasette
 import html
+from jinja2 import FunctionLoader
 import re
 import json
 from .config import get_database, ensure_schema
@@ -28,6 +29,23 @@ def startup(datasette):
 
     return inner
 
+class MyFunctionLoader(FunctionLoader):
+    def list_templates(self):
+        return []
+
+@datasette.hookimpl
+def prepare_jinja2_environment(env, datasette):
+    def load_func(path):
+        print('template {}'.format(path))
+        return None
+#        try:
+#            code = datasette._edit_templates[path]
+#            return code, path, lambda: True
+#        except KeyError:
+#            return None
+
+    env.loader.loaders.insert(0, MyFunctionLoader(load_func))
+
 @datasette.hookimpl
 def get_metadata(datasette, key, database, table):
     rv = {
@@ -38,19 +56,19 @@ def get_metadata(datasette, key, database, table):
 
     rv['databases'][db_name] = {
         'tables': {
-            '_dss_crawl_queue': {
+            'dss_crawl_queue': {
                 'sort_desc': 'id'
             },
-            '_dss_crawl_queue_history': {
+            'dss_crawl_queue_history': {
                 'sort_desc': 'processed_at'
             },
-            '_dss_fetch_cache': {
+            'dss_fetch_cache': {
                 'sort_desc': 'fetched_at'
             },
-            '_dss_job': {
+            'dss_job': {
                 'sort_desc': 'id'
             },
-            '_dss_job_stats': {
+            'dss_job_stats': {
                 'sort_desc': 'job_id'
             },
 
@@ -136,7 +154,7 @@ def extra_template_vars(datasette, request):
         if m:
             id = int(m.group(1))
             db = get_database(datasette)
-            rv = await db.execute('SELECT name, config FROM _dss_crawl WHERE id = ?', [id])
+            rv = await db.execute('SELECT name, config FROM dss_crawl WHERE id = ?', [id])
             for row in rv:
                 config = json.loads(row['config'])
                 config['name'] = row['name']

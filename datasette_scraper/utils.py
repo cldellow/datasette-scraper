@@ -22,7 +22,7 @@ def get_html_parser(response):
 
 
 def get_crawl_config_for_job_id(conn, job_id):
-    res = conn.execute('SELECT _dss_crawl.config FROM _dss_crawl JOIN _dss_job ON _dss_job.crawl_id = _dss_crawl.id WHERE _dss_job.id = ?', [job_id])
+    res = conn.execute('SELECT dss_crawl.config FROM dss_crawl JOIN dss_job ON dss_job.crawl_id = dss_crawl.id WHERE dss_job.id = ?', [job_id])
     config, = res.fetchone()
     config = json.loads(config)
     return config
@@ -38,7 +38,7 @@ def add_crawl_queue_items(conn, job_id, urls):
     already_queued = {}
     for batch in batched_urls:
         cur = conn.execute(
-            'SELECT url FROM _dss_crawl_queue WHERE job_id = {} AND url IN ({})'.format(job_id, ','.join(['?'] * len(batch))),
+            'SELECT url FROM dss_crawl_queue WHERE job_id = {} AND url IN ({})'.format(job_id, ','.join(['?'] * len(batch))),
             batch
         )
         cur.arraysize = 100
@@ -50,7 +50,7 @@ def add_crawl_queue_items(conn, job_id, urls):
     batched_urls = batched(all_urls, batch_size)
     for batch in batched_urls:
         cur = conn.execute(
-            'SELECT url FROM _dss_crawl_queue_history WHERE job_id = {} AND url IN ({})'.format(job_id, ','.join(['?'] * len(batch))),
+            'SELECT url FROM dss_crawl_queue_history WHERE job_id = {} AND url IN ({})'.format(job_id, ','.join(['?'] * len(batch))),
             batch
         )
         cur.arraysize = 100
@@ -70,19 +70,19 @@ def add_crawl_queue_item(conn, job_id, url, depth):
         parsed = urlparse(url)
         host = parsed.hostname
 
-        #print('insert _dss_host_rate_limit host={}'.format(host))
-        conn.execute('INSERT INTO _dss_host_rate_limit(host) SELECT ? WHERE NOT EXISTS(SELECT * FROM _dss_host_rate_limit WHERE host = ?)', [host, host])
+        #print('insert dss_host_rate_limit host={}'.format(host))
+        conn.execute('INSERT INTO dss_host_rate_limit(host) SELECT ? WHERE NOT EXISTS(SELECT * FROM dss_host_rate_limit WHERE host = ?)', [host, host])
 
 
-        cur = conn.execute('INSERT INTO _dss_crawl_queue(job_id, host, url, depth) SELECT ?, ?, ?, ? WHERE NOT EXISTS(SELECT * FROM _dss_crawl_queue WHERE job_id = ? AND url = ?) AND NOT EXISTS(SELECT * FROM _dss_crawl_queue_history WHERE job_id = ? AND url = ?)', [job_id, host, url, depth, job_id, url, job_id, url])
+        cur = conn.execute('INSERT INTO dss_crawl_queue(job_id, host, url, depth) SELECT ?, ?, ?, ? WHERE NOT EXISTS(SELECT * FROM dss_crawl_queue WHERE job_id = ? AND url = ?) AND NOT EXISTS(SELECT * FROM dss_crawl_queue_history WHERE job_id = ? AND url = ?)', [job_id, host, url, depth, job_id, url, job_id, url])
 
         return cur.rowcount
 
 
 def reject_crawl_queue_item(conn, id, reason):
     with conn:
-        conn.execute("INSERT INTO _dss_crawl_queue_history(job_id, host, url, depth, processed_at, fetched_fresh, skipped_reason) SELECT job_id, host, url, depth, strftime('%Y-%m-%d %H:%M:%f'), 0, ? FROM _dss_crawl_queue WHERE id = ?", [reason, id])
-        conn.execute("DELETE FROM _dss_crawl_queue WHERE id = ?", [id])
+        conn.execute("INSERT INTO dss_crawl_queue_history(job_id, host, url, depth, processed_at, fetched_fresh, skipped_reason) SELECT job_id, host, url, depth, strftime('%Y-%m-%d %H:%M:%f'), 0, ? FROM dss_crawl_queue WHERE id = ?", [reason, id])
+        conn.execute("DELETE FROM dss_crawl_queue WHERE id = ?", [id])
 
 def finish_crawl_queue_item(conn, id, response, fresh, fetch_duration):
     content_type = 'application/octet-stream'
@@ -96,15 +96,15 @@ def finish_crawl_queue_item(conn, id, response, fresh, fetch_duration):
             content_type = header[1].split(';')[0]
 
     with conn:
-        conn.execute("INSERT INTO _dss_crawl_queue_history(job_id, host, url, depth, processed_at, fetched_fresh, status_code, content_type, size, duration, request_hash) SELECT job_id, host, url, depth, strftime('%Y-%m-%d %H:%M:%f'), ?, ?, ?, ?, ?, ? FROM _dss_crawl_queue WHERE id = ?", [fresh, status_code, content_type, size, fetch_duration, response['_request_hash'] if '_request_hash' in response else None, id])
-        conn.execute("DELETE FROM _dss_crawl_queue WHERE id = ?", [id])
+        conn.execute("INSERT INTO dss_crawl_queue_history(job_id, host, url, depth, processed_at, fetched_fresh, status_code, content_type, size, duration, request_hash) SELECT job_id, host, url, depth, strftime('%Y-%m-%d %H:%M:%f'), ?, ?, ?, ?, ?, ? FROM dss_crawl_queue WHERE id = ?", [fresh, status_code, content_type, size, fetch_duration, response['_request_hash'] if '_request_hash' in response else None, id])
+        conn.execute("DELETE FROM dss_crawl_queue WHERE id = ?", [id])
 
 def check_for_job_complete(conn, job_id):
     with conn:
-        more_to_do, = conn.execute('SELECT EXISTS(SELECT * FROM _dss_crawl_queue WHERE job_id = ?)', [job_id]).fetchone()
+        more_to_do, = conn.execute('SELECT EXISTS(SELECT * FROM dss_crawl_queue WHERE job_id = ?)', [job_id]).fetchone()
 
         if not more_to_do:
-            conn.execute("UPDATE _dss_job SET status = 'done', finished_at = strftime('%Y-%m-%d %H:%M:%f') WHERE id = ?", [job_id])
+            conn.execute("UPDATE dss_job SET status = 'done', finished_at = strftime('%Y-%m-%d %H:%M:%f') WHERE id = ?", [job_id])
 
 def lazy_connection_factory(default, db_map):
     conns = {}

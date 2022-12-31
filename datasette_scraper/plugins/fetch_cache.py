@@ -40,13 +40,13 @@ def fetch_cached_url(conn, config, url, depth, request_headers):
 
     hash = request_hash(url, request_headers)
 
-    row = conn.execute("SELECT object FROM _dss_fetch_cache WHERE request_hash = ? AND fetched_at >= strftime('%Y-%m-%d %H:%M:%f', 'now', ?)", [hash, '-{} seconds'.format(max_age)]).fetchone()
+    row = conn.execute("SELECT object FROM dss_fetch_cache WHERE request_hash = ? AND fetched_at >= strftime('%Y-%m-%d %H:%M:%f', 'now', ?)", [hash, '-{} seconds'.format(max_age)]).fetchone()
 
     if not row:
         return None
 
     with conn:
-        conn.execute("UPDATE _dss_fetch_cache SET read_at = strftime('%Y-%m-%d %H:%M:%f') WHERE request_hash = ?", [hash]).fetchone()
+        conn.execute("UPDATE dss_fetch_cache SET read_at = strftime('%Y-%m-%d %H:%M:%f') WHERE request_hash = ?", [hash]).fetchone()
 
 
     object, = row
@@ -72,7 +72,7 @@ def after_fetch_url(conn, config, url, request_headers, response, fresh, fetch_d
     object = json.dumps(response).encode('utf-8')
     object = compressor.compress(object)
     with conn:
-        conn.execute('INSERT OR REPLACE INTO _dss_fetch_cache(request_hash, url, fetched_at, read_at, object) VALUES(?, ?, ?, ?, ?)', [hash, url, fetched_at, fetched_at, object])
+        conn.execute('INSERT OR REPLACE INTO dss_fetch_cache(request_hash, url, fetched_at, read_at, object) VALUES(?, ?, ?, ?, ?)', [hash, url, fetched_at, fetched_at, object])
 
 
 @hookimpl

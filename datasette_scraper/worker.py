@@ -18,7 +18,7 @@ def entrypoint_worker(dss_db_name, db_map):
         conn.close()
 
 def get_next_crawl_queue_row(conn):
-    row = conn.execute("SELECT id, job_id, host, queued_at, url, depth, claimed_at FROM _dss_crawl_queue WHERE host IN (SELECT host FROM _dss_host_rate_limit WHERE next_fetch_at < strftime('%Y-%m-%d %H:%M:%f')) AND (claimed_at IS NULL OR claimed_at < datetime('now', '-5 minutes')) ORDER BY depth, queued_at LIMIT 1").fetchone()
+    row = conn.execute("SELECT id, job_id, host, queued_at, url, depth, claimed_at FROM dss_crawl_queue WHERE host IN (SELECT host FROM dss_host_rate_limit WHERE next_fetch_at < strftime('%Y-%m-%d %H:%M:%f')) AND (claimed_at IS NULL OR claimed_at < datetime('now', '-5 minutes')) ORDER BY depth, queued_at LIMIT 1").fetchone()
 
     if not row:
         time.sleep(0.05)
@@ -30,9 +30,9 @@ def get_next_crawl_queue_row(conn):
     # Try to claim the row -- note that another worker may have claimed it while we were waiting.
     with conn:
         if claimed_at:
-            claim_row = conn.execute("UPDATE _dss_crawl_queue SET claimed_at = strftime('%Y-%m-%d %H:%M:%f') WHERE id = ? AND claimed_at = ?", [id, claimed_at])
+            claim_row = conn.execute("UPDATE dss_crawl_queue SET claimed_at = strftime('%Y-%m-%d %H:%M:%f') WHERE id = ? AND claimed_at = ?", [id, claimed_at])
         else:
-            claim_row = conn.execute("UPDATE _dss_crawl_queue SET claimed_at = strftime('%Y-%m-%d %H:%M:%f') WHERE id = ? AND claimed_at IS NULL", [id])
+            claim_row = conn.execute("UPDATE dss_crawl_queue SET claimed_at = strftime('%Y-%m-%d %H:%M:%f') WHERE id = ? AND claimed_at IS NULL", [id])
 
         if claim_row.rowcount != 1:
             #print('...failed to claim crawl item job_id={} id={} url={}'.format(job_id, id, url))
@@ -51,7 +51,7 @@ def absolutize_urls(base_url, new_url):
 
 def update_crawl_stats(conn, job_id, host, response, fresh):
     with conn:
-        conn.execute("INSERT OR IGNORE INTO _dss_job_stats(job_id, host) VALUES (?, ?)", [job_id, host])
+        conn.execute("INSERT OR IGNORE INTO dss_job_stats(job_id, host) VALUES (?, ?)", [job_id, host])
         xx_column = 'fetched_5xx'
         status_code = response['status_code']
 
@@ -68,7 +68,7 @@ def update_crawl_stats(conn, job_id, host, response, fresh):
 
         # TODO: this seems to undercount sometimes when run under high concurrency,
         #       which likely means my mental model is wrong. Hmm.
-        conn.execute("UPDATE _dss_job_stats SET fetched = fetched + 1, {} = {} + 1{} WHERE job_id = ? AND host = ?".format(xx_column, xx_column, maybe_fetched_fresh), [job_id, host])
+        conn.execute("UPDATE dss_job_stats SET fetched = fetched + 1, {} = {} + 1{} WHERE job_id = ? AND host = ?".format(xx_column, xx_column, maybe_fetched_fresh), [job_id, host])
 
 def discover_urls(config, from_url, from_depth, response):
     urls = [new_url for urls in pm.hook.discover_urls(config=config, url=from_url, response=response) for new_url in urls]
@@ -150,15 +150,15 @@ def crawl_loop(dss_db_name, factory, conn):
     fetch_duration = math.ceil(1000 * (time.time() - start))
 
     if not response:
-        # Try to update _dss_host_rate_limit
+        # Try to update dss_host_rate_limit
         with conn:
-            claim_rate_limit = conn.execute("UPDATE _dss_host_rate_limit SET next_fetch_at = strftime('%Y-%m-%d %H:%M:%f', 'now', delay_seconds || ' seconds') WHERE host = ? AND next_fetch_at < strftime('%Y-%m-%d %H:%M:%f')", [host])
+            claim_rate_limit = conn.execute("UPDATE dss_host_rate_limit SET next_fetch_at = strftime('%Y-%m-%d %H:%M:%f', 'now', delay_seconds || ' seconds') WHERE host = ? AND next_fetch_at < strftime('%Y-%m-%d %H:%M:%f')", [host])
 
             if claim_rate_limit.rowcount != 1:
                 # ...we failed to get rate limit, so release the row
                 print('...failed to claim host rate limit for job_id={} host={}'.format(job_id, host))
                 # Release the row we were working on
-                conn.execute('UPDATE _dss_crawl_queue SET claimed_at = NULL WHERE id = ?', [id])
+                conn.execute('UPDATE dss_crawl_queue SET claimed_at = NULL WHERE id = ?', [id])
                 return None
 
 
@@ -179,8 +179,8 @@ def crawl_loop(dss_db_name, factory, conn):
     pm.hook.after_fetch_url(conn=conn, config=config, url=url, request_headers=request_headers, response=response, fresh=fresh, fetch_duration=fetch_duration)
 
     urls = discover_urls(config, url, depth, response)
-    # Try to insert these URLs into _dss_crawl_queue; skipping entries that are already
-    # present, or present in _dss_crawl_queue_history with a lower or equal depth.
+    # Try to insert these URLs into dss_crawl_queue; skipping entries that are already
+    # present, or present in dss_crawl_queue_history with a lower or equal depth.
     now = time.time()
     enqueued = utils.add_crawl_queue_items(conn, job_id, urls)
     #print('enqueued {}/{} urls in {} sec'.format(enqueued, len(urls), time.time() - now))
@@ -190,7 +190,7 @@ def crawl_loop(dss_db_name, factory, conn):
             rv = inserts.handle_insert(factory, insert)
 
             for ((dbname, tablename), (inserted, updated)) in rv.items():
-                conn.execute('INSERT INTO _dss_extract_stats(job_id, database, tbl, inserted, updated) VALUES (?, ?, ?, ?, ?) ON CONFLICT(job_id, database, tbl) DO UPDATE SET inserted = inserted + ?, updated = updated + ?', [job_id, dbname or dss_db_name, tablename, inserted, updated, inserted, updated])
+                conn.execute('INSERT INTO dss_extract_stats(job_id, database, tbl, inserted, updated) VALUES (?, ?, ?, ?, ?) ON CONFLICT(job_id, database, tbl) DO UPDATE SET inserted = inserted + ?, updated = updated + ?', [job_id, dbname or dss_db_name, tablename, inserted, updated, inserted, updated])
 
 
     utils.finish_crawl_queue_item(conn, id, response, fresh, fetch_duration)
