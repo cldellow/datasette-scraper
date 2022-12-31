@@ -81,7 +81,7 @@ def discover_urls(config, from_url, from_depth, response):
 
     # Resolve relative paths
     urls = [(absolutize_urls(from_url, new_url), new_depth) for (new_url, new_depth) in urls]
-    urls = [x for x in urls if x]
+    urls = [x for x in urls if x[0]]
 
     # Reject non HTTP/HTTPS URLs
     urls = [new_url for new_url in urls if new_url[0].startswith('https:') or new_url[0].startswith('http:')]
