@@ -1,5 +1,6 @@
 import json
 from datasette import Response
+from datasette.utils import tilde_encode
 from .config import get_database
 from .workers import seed_crawl
 
@@ -36,6 +37,22 @@ async def scraper_upsert(datasette, request):
         await db.execute_write('UPDATE dss_crawl SET name = ?, config = ? WHERE id = ?', [name, json.dumps(config), id], block=True)
 
     return redirect_to_crawl(datasette, id)
+
+async def scraper_host_rate_limit(datasette, request):
+    if request.method != 'POST':
+        return Response('Unexpected method', status=405)
+
+    form = await request.post_vars()
+
+    host = form['host']
+    delay_seconds = float(form['delay_seconds'])
+
+    db = get_database(datasette)
+
+    await db.execute_write('UPDATE dss_host_rate_limit SET delay_seconds = ? WHERE host = ?', [delay_seconds, host], block=True)
+
+    return Response.redirect('/{}/dss_host_rate_limit/{}'.format(db.name, tilde_encode(host)))
+
 
 async def scraper_crawl_id(datasette, request):
     if request.method != 'GET':
@@ -117,6 +134,7 @@ async def scraper_crawl_id_edit(datasette, request):
 
 routes = [
     (r"^/-/scraper/upsert$", scraper_upsert),
+    (r"^/-/scraper/host-rate-limit$", scraper_host_rate_limit),
     # CONSIDER: Should we hijack the usual Datasette table / row routes?
     # (r"^/test/dss_crawl/(?P<id>1)$", scraper_crawl_id),
     (r"^/-/scraper/crawl/(?P<id>[0-9]+)/start$", scraper_crawl_id_start),
