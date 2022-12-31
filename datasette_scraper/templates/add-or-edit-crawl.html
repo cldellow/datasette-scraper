@@ -1,0 +1,202 @@
+<style>
+#editor { margin-bottom: 1em; }
+
+.category-subcategories {
+  margin-top: 1em;
+  margin-left: 1em;
+}
+
+.category-subcategories li {
+  padding: 0.5em;
+  cursor: pointer;
+  border-top-left-radius: 10px;
+  border-top-right-radius: 10px;
+  display: inline-block;
+  margin-right: 0.5em;
+}
+
+.category-subcategories li.selected {
+  background-color: #ccc;
+}
+
+.categorization-detail {
+  border: 1px solid #ccc;
+  padding: 1em;
+}
+
+[aria-label=Delete] {
+  font-size: 0;
+}
+
+[aria-label=Delete]:before {
+  content: '❌';
+  font-size: initial;
+}
+
+.array-table-layout header {
+  display: flex;
+  flex-direction: row-reverse;
+  justify-content: flex-end;
+  background-color: #eee;
+  color: #111;
+}
+
+.control:has([type=checkbox]) {
+  display: flex;
+  flex-direction: row-reverse;
+  justify-content: flex-end;
+}
+
+.control:has([type=number]) label {
+  display: inline-block;
+  min-width: 10em;
+}
+
+.array-table-layout header label {
+  margin-left: 1em;
+}
+
+.array-table-layout header button {
+  font-size: 0;
+}
+
+.array-table-layout header button:before {
+  font-size: initial;
+  content: '➕';
+}
+
+.root_properties_seed-urls thead {
+  display: none;
+}
+
+.root_properties_seed-urls table td {
+  font-size: 0;
+}
+
+.root_properties_seed-urls table:has(button) td {
+  font-size: initial;
+}
+
+.root_properties_seed-urls table td:after {
+  content: 'Use the ➕ to add a set of hardcoded URLs that are used to start the crawl.';
+  font-size: initial;
+}
+
+.root_properties_seed-urls table:has(button) td:after {
+  content: initial;
+}
+
+
+.root_properties_name label {
+  display: inline-block;
+  min-width: 5em;
+}
+
+.root_properties_discover-deny thead {
+  display: none;
+}
+
+.root_properties_discover-deny table td {
+  font-size: 0;
+}
+
+.root_properties_discover-deny table:has(button) td {
+  font-size: initial;
+}
+
+.root_properties_discover-deny table td:after {
+  content: 'All discovered URLs will be crawled. Use the ➕ to add restrictions.';
+  font-size: initial;
+}
+
+.root_properties_discover-deny table:has(button) td:after {
+  content: initial;
+}
+
+
+.root_properties_discover-html-links table thead {
+  display: none;
+}
+
+.root_properties_discover-html-links table:has(button) thead {
+  display: table-header-group;
+}
+
+
+.root_properties_discover-html-links table td {
+  font-size: 0;
+}
+
+.root_properties_discover-html-links table:has(button) td {
+  font-size: initial;
+}
+
+.root_properties_discover-html-links table td:after {
+  content: 'No links are currently being discovered from HTML content. Use the ➕ to add discovery rules.';
+  font-size: initial;
+}
+
+.root_properties_discover-html-links table:has(button) td:after {
+  content: initial;
+}
+
+.root_properties_fetch-cache table thead {
+  display: none;
+}
+
+.root_properties_fetch-cache table:has(button) thead {
+  display: table-header-group;
+}
+
+
+.root_properties_fetch-cache table td {
+  font-size: 0;
+}
+
+.root_properties_fetch-cache table:has(button) td {
+  font-size: initial;
+}
+
+.root_properties_fetch-cache table td:after {
+  content: 'All pages will be fetched live from the origin server. Use the ➕ to add caching rules.';
+  font-size: initial;
+}
+
+.root_properties_fetch-cache table:has(button) td:after {
+  content: initial;
+}
+
+
+</style>
+
+
+<script>
+// Seems weird that I need to provide this?
+process = {
+  env: {}
+};
+
+initialData = {{ dss_default_config }};
+
+schema = {{ dss_schema }};
+
+uischema = {{ dss_uischema }};
+
+onChange = ({ errors, data }) => {
+    console.log(errors);
+    console.log(data);
+
+    document.getElementById('scraper_config').value = JSON.stringify(data);
+    document.getElementById('scraper_submit').disabled = errors.length > 0;
+
+}
+</script>
+
+<div id='editor'></div>
+<form action='/-/scraper/upsert' method='post'>
+  <input type="hidden" name="csrftoken" value="{{ csrftoken() }}">
+  <input id='scraper_id' type='hidden' name='id' value='{{ dss_id }}'/>
+  <input id='scraper_config' type='hidden' name='config' value=''/>
+  <input id='scraper_submit' type='submit' value='{% if dss_id %}Save{% else %}Add{% endif %} Crawl'>
+  <script src='/-/static-plugins/datasette_scraper/editor.bundle.js'></script>
+</form>

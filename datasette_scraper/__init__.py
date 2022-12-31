@@ -40,6 +40,9 @@ def prepare_jinja2_environment(env, datasette):
         try:
             if path.startswith('table-') and path.endswith('-dss_crawl.html'):
                 path = 'table-dss_crawl.html'
+            if path.startswith('row-') and path.endswith('-dss_crawl.html'):
+                path = 'row-dss_crawl.html'
+
             template_path = os.path.abspath(os.path.join(__file__, '..', 'templates', path))
             print(path)
             print(template_path)
@@ -159,7 +162,7 @@ def extra_template_vars(datasette, request):
         }
 
 
-        m = re.search('^/-/scraper/crawl/([0-9]+)', request.path)
+        m = re.search('/dss_crawl/([0-9]+)$', request.path)
         if m:
             id = int(m.group(1))
             db = get_database(datasette)

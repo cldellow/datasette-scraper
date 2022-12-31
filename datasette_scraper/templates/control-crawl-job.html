@@ -1,31 +1,19 @@
-{% extends "base.html" %}
-
-{% block title %}Scraper: Crawl {{ dss_id }}{% endblock %}
-
-{% block body_class %}index{% endblock %}
-
-{% block content %}
-<h1>{% if dss_id %}Update Crawl {{ dss_id }} {% else %} Add Crawl {% endif %}</h1>
-
-<a href='{{ dss_id }}/edit'>Edit Crawl</a>
-
 {% for row in sql("select * from dss_job WHERE crawl_id = ? AND finished_at IS NULL", [dss_id]) %}
 <h2>Job #{{row['id']}} ({{row['status']}})</h2>
   Pending: {{ sql('select count(*) FROM dss_crawl_queue WHERE job_id = ?', [row['id']])[0][0] }}
   Crawled: {{ sql('select count(*) FROM dss_crawl_queue_history WHERE job_id = ?', [row['id']])[0][0] }}
-  <form method='post' action='{{ dss_id }}/cancel'>
+  <form method='post' action='/-/scraper/crawl/{{ dss_id }}/cancel'>
     <input type="hidden" name="csrftoken" value="{{ csrftoken() }}">
     <input type='hidden' name='id' value='{{ dss_id }}'/>
-    <button type='submit'>Cancel Job</button>
+    <input type='submit' value='Cancel Job'>
   </form>
 {% else %}
-  <form method='post' action='{{ dss_id }}/start'>
+  <h2>No job currently running</h2>
+  <form method='post' action='/-/scraper/crawl/{{ dss_id }}/start'>
     <input type="hidden" name="csrftoken" value="{{ csrftoken() }}">
     <input type='hidden' name='id' value='{{ dss_id }}'/>
-    <button type='submit'>Start Job</button>
+    <input type='submit' value='Start Job'>
   </form>
 {% endfor %}
 
-<h2>TODO: show previous job stats</h2>
 
-{% endblock %}
