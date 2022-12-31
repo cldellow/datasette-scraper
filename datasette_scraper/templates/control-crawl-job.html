@@ -1,7 +1,7 @@
 {% for row in sql("select * from dss_job WHERE crawl_id = ? AND finished_at IS NULL", [dss_id]) %}
-<h2>Job #{{row['id']}} ({{row['status']}})</h2>
-  Pending: {{ sql('select count(*) FROM dss_crawl_queue WHERE job_id = ?', [row['id']])[0][0] }}
-  Crawled: {{ sql('select count(*) FROM dss_crawl_queue_history WHERE job_id = ?', [row['id']])[0][0] }}
+<h2><a href='../dss_job/{{row['id']}}'>Job #{{row['id']}}</a> ({{row['status']}})</h2>
+  Pending: {{ "{:,}".format(sql('select count(*) FROM dss_crawl_queue WHERE job_id = ?', [row['id']])[0][0]) }}
+  Crawled: {{ "{:,}".format(sql('select count(*) FROM dss_crawl_queue_history WHERE job_id = ?', [row['id']])[0][0]) }}
   <form method='post' action='/-/scraper/crawl/{{ dss_id }}/cancel'>
     <input type="hidden" name="csrftoken" value="{{ csrftoken() }}">
     <input type='hidden' name='id' value='{{ dss_id }}'/>

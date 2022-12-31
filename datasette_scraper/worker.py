@@ -41,13 +41,16 @@ def get_next_crawl_queue_row(conn):
     return row
 
 def absolutize_urls(base_url, new_url):
-    rv = urljoin(base_url, new_url)
-    hash_idx = rv.find('#')
+    try:
+        rv = urljoin(base_url, new_url)
+        hash_idx = rv.find('#')
 
-    if hash_idx == -1:
-        return rv
+        if hash_idx == -1:
+            return rv
 
-    return rv[0:hash_idx]
+        return rv[0:hash_idx]
+    except:
+        return None
 
 def update_crawl_stats(conn, job_id, host, response, fresh):
     with conn:
@@ -78,6 +81,7 @@ def discover_urls(config, from_url, from_depth, response):
 
     # Resolve relative paths
     urls = [(absolutize_urls(from_url, new_url), new_depth) for (new_url, new_depth) in urls]
+    urls = [x for x in urls if x]
 
     # Reject non HTTP/HTTPS URLs
     urls = [new_url for new_url in urls if new_url[0].startswith('https:') or new_url[0].startswith('http:')]
