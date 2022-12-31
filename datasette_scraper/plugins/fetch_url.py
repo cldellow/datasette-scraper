@@ -2,11 +2,13 @@ from ..hookspecs import hookimpl
 from datetime import datetime
 import httpx
 
+client = httpx.Client()
+
 @hookimpl(trylast=True)
 def fetch_url(url, request_headers):
     fetched_at = datetime.utcnow().isoformat(sep=' ')
     try:
-        response = httpx.get(url, headers=request_headers)
+        response = client.get(url, headers=request_headers)
 
         headers = []
         for k, v in response.headers.items():
