@@ -31,4 +31,4 @@ def config_schema():
 
 @hookimpl
 def config_default_value():
-    return ['https://cldellow.com/']
+    return []

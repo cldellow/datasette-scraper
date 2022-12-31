@@ -3,6 +3,7 @@ from datasette import Response
 from datasette.utils import tilde_encode
 from .config import get_database
 from .workers import seed_crawl
+from .zstd import train_zstd_dict
 
 async def crawl_exists(datasette, crawl_id):
     db = get_database(datasette)
@@ -37,6 +38,18 @@ async def scraper_upsert(datasette, request):
         await db.execute_write('UPDATE dss_crawl SET name = ?, config = ? WHERE id = ?', [name, json.dumps(config), id], block=True)
 
     return redirect_to_crawl(datasette, id)
+
+async def scraper_train_zstd_dict(datasette, request):
+    if request.method != 'POST':
+        return Response('Unexpected method', status=405)
+
+    form = await request.post_vars()
+
+    host = form['host']
+    db = get_database(datasette)
+
+    dict_id = await train_zstd_dict(db, host)
+    return Response.redirect('/{}/dss_zstd_dict/{}'.format(db.name, dict_id))
 
 async def scraper_host_rate_limit(datasette, request):
     if request.method != 'POST':
@@ -139,4 +152,5 @@ routes = [
     # (r"^/test/dss_crawl/(?P<id>1)$", scraper_crawl_id),
     (r"^/-/scraper/crawl/(?P<id>[0-9]+)/start$", scraper_crawl_id_start),
     (r"^/-/scraper/crawl/(?P<id>[0-9]+)/cancel$", scraper_crawl_id_cancel),
+    (r"^/-/scraper/train-zstd-dict$", scraper_train_zstd_dict),
 ]

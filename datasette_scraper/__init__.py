@@ -48,14 +48,14 @@ def prepare_jinja2_environment(env, datasette):
                 path = 'table-dss_job_stats.html'
             elif path.startswith('table-') and path.endswith('-dss_extract_stats.html'):
                 path = 'table-dss_extract_stats.html'
+            elif path.startswith('table-') and path.endswith('-dss_zstd_dict.html'):
+                path = 'table-dss_zstd_dict.html'
             elif path.startswith('row-') and path.endswith('-dss_crawl.html'):
                 path = 'row-dss_crawl.html'
             elif path.startswith('row-') and path.endswith('-dss_host_rate_limit.html'):
                 path = 'row-dss_host_rate_limit.html'
 
             template_path = os.path.abspath(os.path.join(__file__, '..', 'templates', path))
-            print(path)
-            print(template_path)
 
             f = open(template_path, 'r')
             contents = f.read()
@@ -125,7 +125,7 @@ def extra_template_vars(datasette, request):
             'minLength': 1
         }
 
-        default_config = {'name': 'xx'}
+        default_config = {'name': ''}
 
         for plugin in pm.get_plugins():
             if not 'config_schema' in dir(plugin):

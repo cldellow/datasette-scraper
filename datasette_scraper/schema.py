@@ -4,6 +4,15 @@ schema = """
 PRAGMA user_version = {};
 """.format(current_schema_version) + """
 
+-- Site-specific dictionaries for zstd
+CREATE TABLE dss_zstd_dict(
+  id integer primary key,
+  host text not null,
+  active boolean not null default true,
+  dict blob not null
+);
+
+
 -- Global rate limits. Currently, no attempt at fairness - a run of
 -- a crawl can starve runs of other crawls.
 CREATE TABLE dss_host_rate_limit(
@@ -18,6 +27,8 @@ CREATE TABLE dss_fetch_cache(
   -- A hash of the request that was sent, eg url + headers
   request_hash text primary key,
 
+  host text not null,
+
   -- The URL that was fetched
   url text not null,
 
@@ -31,7 +42,9 @@ CREATE TABLE dss_fetch_cache(
   read_at text not null default (strftime('%Y-%m-%d %H:%M:%f')),
 
   -- The response object; UTF-8 JSON encoded. Might be compressed.
-  object blob not null
+  object blob not null,
+
+  dict_id integer references dss_zstd_dict(id)
 );
 
 -- The definition of a crawl, eg "Crawl every page at most 3 hops away from
@@ -109,4 +122,7 @@ CREATE UNIQUE INDEX idx_only_one_active_job_per_crawl ON dss_job(crawl_id) WHERE
 
 CREATE INDEX idx_crawl_queue_item ON dss_crawl_queue(job_id, url);
 CREATE INDEX idx_crawl_queue_history_item ON dss_crawl_queue_history(job_id, url);
+CREATE INDEX idx_dss_zstd_dict_host ON dss_zstd_dict(host);
+CREATE INDEX idx_dss_fetch_cache_host ON dss_fetch_cache(host);
+
 """

@@ -5,12 +5,10 @@ import re
 import hashlib
 import httpx
 import json
-import zstandard
+from ..zstd import get_decompressor, get_compressor
+from urllib.parse import urlparse
 
 FETCH_CACHE = 'fetch-cache'
-
-compressor = zstandard.ZstdCompressor(level=9)
-decompressor = zstandard.ZstdDecompressor()
 
 _re = {}
 
@@ -40,7 +38,7 @@ def fetch_cached_url(conn, config, url, depth, request_headers):
 
     hash = request_hash(url, request_headers)
 
-    row = conn.execute("SELECT object FROM dss_fetch_cache WHERE request_hash = ? AND fetched_at >= strftime('%Y-%m-%d %H:%M:%f', 'now', ?)", [hash, '-{} seconds'.format(max_age)]).fetchone()
+    row = conn.execute("SELECT object, dict_id FROM dss_fetch_cache WHERE request_hash = ? AND fetched_at >= strftime('%Y-%m-%d %H:%M:%f', 'now', ?)", [hash, '-{} seconds'.format(max_age)]).fetchone()
 
     if not row:
         return None
@@ -49,9 +47,9 @@ def fetch_cached_url(conn, config, url, depth, request_headers):
         conn.execute("UPDATE dss_fetch_cache SET read_at = strftime('%Y-%m-%d %H:%M:%f') WHERE request_hash = ?", [hash]).fetchone()
 
 
-    object, = row
+    object, dict_id = row
 
-    object = decompressor.decompress(object)
+    object = get_decompressor(conn, dict_id).decompress(object)
 
     return json.loads(object.decode('utf-8'))
 
@@ -66,13 +64,21 @@ def after_fetch_url(conn, config, url, request_headers, response, fresh, fetch_d
 
     fetched_at = response['fetched_at']
 
+    host = urlparse(url).hostname
     hash = request_hash(url, request_headers)
     response['_request_hash'] = hash
+
+    dict_id = conn.execute('SELECT id FROM dss_zstd_dict WHERE host = ? AND active = 1 ORDER BY id DESC LIMIT 1', [host]).fetchone()
+
+    if dict_id:
+        dict_id = dict_id[0]
+
+    compressor = get_compressor(conn, dict_id)
 
     object = json.dumps(response).encode('utf-8')
     object = compressor.compress(object)
     with conn:
-        conn.execute('INSERT OR REPLACE INTO dss_fetch_cache(request_hash, url, fetched_at, read_at, object) VALUES(?, ?, ?, ?, ?)', [hash, url, fetched_at, fetched_at, object])
+        conn.execute('INSERT OR REPLACE INTO dss_fetch_cache(request_hash, host, url, fetched_at, read_at, object, dict_id) VALUES(?, ?, ?, ?, ?, ?, ?)', [hash, host, url, fetched_at, fetched_at, object, dict_id])
 
 
 @hookimpl
