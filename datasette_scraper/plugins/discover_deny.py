@@ -44,4 +44,7 @@ def config_schema():
 
 @hookimpl
 def config_default_value():
-    return []
+    return [
+        # Try to avoid binary file types
+        '(?i)[.](bmp|gif|gz|jpg|jpeg|mpeg|mp3|mp4|pdf|png|tar|webp|wma|wmv|xls|xlsx|xz|zip)'
+    ]
