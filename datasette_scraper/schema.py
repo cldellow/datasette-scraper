@@ -1,4 +1,4 @@
-current_schema_version = 1000000;
+current_schema_version = 1000001;
 
 schema = """
 PRAGMA user_version = {};
@@ -116,6 +116,14 @@ CREATE TABLE dss_extract_stats(
   inserted integer not null default 0,
   updated integer not null default 0,
   primary key (job_id, database, tbl)
+);
+
+CREATE TABLE dss_ops(
+  id integer primary key,
+  queued_at text not null default (strftime('%Y-%m-%d %H:%M:%f')),
+  finished_at text,
+  type text not null,
+  config text not null default '{}'
 );
 
 CREATE UNIQUE INDEX idx_only_one_active_job_per_crawl ON dss_job(crawl_id) WHERE finished_at IS NULL;

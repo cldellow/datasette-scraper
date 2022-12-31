@@ -100,7 +100,7 @@ async def scraper_crawl_id_start(datasette, request):
 
     # TODO: handle UNIQUE constraint failed: dss_job.crawl_id
 
-    seed_crawl(job_id)
+    await seed_crawl(db, job_id)
 
     return redirect_to_crawl(datasette, id)
 

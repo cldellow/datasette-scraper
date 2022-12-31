@@ -34,6 +34,10 @@ def ensure_schema_internal(conn):
             migrator.migrate()
     elif v == current_schema_version:
         pass
+    elif v == 1000000:
+        # Nothing special required - this just added a table
+        with DBMigrator(conn, schema, allow_deletions=True) as migrator:
+            migrator.migrate()
     else:
         raise ScraperError('unsupported schema version: {} -- you may need to give datasette-scraper its own database'.format(v))
 

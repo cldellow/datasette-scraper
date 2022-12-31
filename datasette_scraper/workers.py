@@ -1,19 +1,23 @@
-from multiprocessing import Process, SimpleQueue
+from multiprocessing import Process
 import sys
 import os
+import json
 from datasette_scraper import ipc
 from .config import get_database
 from .seeder import entrypoint_seeder
 from .worker import entrypoint_worker
 
 processes = []
-seeder_inbox = SimpleQueue()
 
 # TODO: this should be configurable / use a sane default
 NUM_WORKERS = 16
 
-def seed_crawl(job_id):
-    seeder_inbox.put({ 'type': ipc.SEED_CRAWL, 'job-id': job_id })
+async def seed_crawl(db, job_id):
+    await db.execute_write(
+        'INSERT INTO dss_ops(type, config) VALUES (?, ?)',
+        [ipc.SEED_CRAWL, json.dumps({'job-id': job_id})],
+        block=True
+    )
 
 def start_workers(datasette):
     # Don't start background workers if we're being tested under pytest.
@@ -28,7 +32,7 @@ def start_workers(datasette):
             continue
         db_map[k] = v.path
 
-    p = Process(target=entrypoint_seeder, args=(dss_db_name, db_map, seeder_inbox), daemon=True)
+    p = Process(target=entrypoint_seeder, args=(dss_db_name, db_map), daemon=True)
     p.start()
     processes.append(('seeder', p))
 
