@@ -18,6 +18,17 @@ def entrypoint_worker(dss_db_name, db_map):
         conn.close()
 
 def get_next_crawl_queue_row(conn):
+    # TODO: consider choosing randomly from the next N eligible items, this decreases
+    #       contention so we have fewer failed attempts to claim a row in the
+    #       entirely-cached path.
+    #
+    # I'm not clear on how beneficial this is in real life workloads.
+    # e.g. on my 16-core machine, I can process 23K URLs in 24 seconds,
+    # so the overhead of the system is ~16 CPU-milliseconds per URL. If your
+    # code to process an item is of similar duration or longer, we won't get much
+    # value from optimizing the infrastructure further.
+
+    #row = conn.execute("WITH xs AS (SELECT id, job_id, host, queued_at, url, depth, claimed_at FROM dss_crawl_queue WHERE host IN (SELECT host FROM dss_host_rate_limit WHERE next_fetch_at < strftime('%Y-%m-%d %H:%M:%f')) AND (claimed_at IS NULL OR claimed_at < datetime('now', '-5 minutes')) ORDER BY depth, queued_at LIMIT 32) SELECT * FROM xs ORDER BY RANDOM() LIMIT 1").fetchone()
     row = conn.execute("SELECT id, job_id, host, queued_at, url, depth, claimed_at FROM dss_crawl_queue WHERE host IN (SELECT host FROM dss_host_rate_limit WHERE next_fetch_at < strftime('%Y-%m-%d %H:%M:%f')) AND (claimed_at IS NULL OR claimed_at < datetime('now', '-5 minutes')) ORDER BY depth, queued_at LIMIT 1").fetchone()
 
     if not row:
@@ -69,8 +80,6 @@ def update_crawl_stats(conn, job_id, host, response, fresh):
         if fresh:
             maybe_fetched_fresh = ', fetched_fresh = fetched_fresh + 1'
 
-        # TODO: this seems to undercount sometimes when run under high concurrency,
-        #       which likely means my mental model is wrong. Hmm.
         conn.execute("UPDATE dss_job_stats SET fetched = fetched + 1, {} = {} + 1{} WHERE job_id = ? AND host = ?".format(xx_column, xx_column, maybe_fetched_fresh), [job_id, host])
 
 def discover_urls(config, from_url, from_depth, response):
