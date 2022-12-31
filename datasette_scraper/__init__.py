@@ -44,6 +44,10 @@ def prepare_jinja2_environment(env, datasette):
                 path = 'table-dss_job.html'
             elif path.startswith('table-') and path.endswith('-dss_host_rate_limit.html'):
                 path = 'table-dss_host_rate_limit.html'
+            elif path.startswith('table-') and path.endswith('-dss_job_stats.html'):
+                path = 'table-dss_job_stats.html'
+            elif path.startswith('table-') and path.endswith('-dss_extract_stats.html'):
+                path = 'table-dss_extract_stats.html'
             elif path.startswith('row-') and path.endswith('-dss_crawl.html'):
                 path = 'row-dss_crawl.html'
             elif path.startswith('row-') and path.endswith('-dss_host_rate_limit.html'):

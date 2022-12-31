@@ -12,8 +12,13 @@
     .rows-and-columns td:nth-of-type({{ loop.index }}):before { content: "{{ column.name|escape_css_string }}"; }
 {% endfor %}}
 
-tbody .col-id a:after {
-    content: " ➜"
+.type-pk a {
+    font-size: 0;
+}
+
+.type-pk a:after {
+    content: '🔑 ➜';
+    font-size: initial;
 }
 </style>
 {% endblock %}
@@ -135,6 +140,11 @@ tbody .col-id a:after {
 </div>
 {% endif %}
 
+{% if query.sql and allow_execute_sql %}
+    <p><a class="not-underlined" title="{{ query.sql }}" href="{{ urls.database(database) }}?{{ {'sql': query.sql}|urlencode|safe }}{% if query.params %}&amp;{{ query.params|urlencode|safe }}{% endif %}">&#x270e; <span class="underlined">View and edit SQL</span></a></p>
+{% endif %}
+
+
 {% if suggested_facets %}
     {% include "_suggested_facets.html" %}
 {% endif %}
@@ -152,6 +162,5 @@ tbody .col-id a:after {
 {% if next_url %}
      <p><a href="{{ next_url }}">Next page</a></p>
 {% endif %}
-
 
 {% endblock %}
