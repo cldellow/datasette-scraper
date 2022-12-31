@@ -13,6 +13,15 @@ def get_dict(conn, dict_id):
 
     return zstandard.ZstdCompressionDict(rv[0])
 
+def get_active_dict_id(conn, host):
+    row = conn.execute('SELECT id FROM dss_zstd_dict WHERE active AND host = ? ORDER BY id DESC LIMIT 1', [host]).fetchone()
+
+    if not row:
+        return None
+
+    dict_id, = row
+    return dict_id
+
 def get_compressor(conn, dict_id):
     if not dict_id:
         return no_dict_compressor
@@ -25,7 +34,7 @@ def get_decompressor(conn, dict_id):
 
     return zstandard.ZstdDecompressor(dict_data=get_dict(conn, dict_id))
 
-async def train_zstd_dict(db, host):
+def train_zstd_dict(conn, host):
     def get_samples(conn):
         hashes = conn.execute('SELECT object, dict_id FROM dss_fetch_cache WHERE host = ? ORDER BY RANDOM() LIMIT {}'.format(NUM_SAMPLES), [host]).fetchall()
 
@@ -36,10 +45,10 @@ async def train_zstd_dict(db, host):
 
         return rv
 
-
-    samples = await db.execute_fn(get_samples)
+    samples = get_samples(conn)
 
     zdict = zstandard.train_dictionary(DICT_SIZE, samples)
 
-    rv = await db.execute_write('INSERT INTO dss_zstd_dict(host, active, dict) VALUES (?, 1, ?)', [host, zdict.as_bytes()], block=True)
-    return rv.lastrowid
+    with conn:
+        rv = conn.execute('INSERT INTO dss_zstd_dict(host, active, dict) VALUES (?, 1, ?)', [host, zdict.as_bytes()])
+        return rv.lastrowid

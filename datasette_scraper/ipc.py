@@ -1,1 +1,6 @@
+DISCOVER_MISSING_DICTIONARIES = 'discover-missing-dictionaries'
+RECOMPRESS_ALL = 'recompress-all'
+RECOMPRESS_HOST = 'recompress-host'
+RECOMPRESS_HASH = 'recompress-hash'
 SEED_CRAWL = 'seed-crawl'
+TRAIN_DICTIONARY = 'train-dictionary'
