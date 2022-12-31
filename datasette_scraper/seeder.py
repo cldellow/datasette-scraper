@@ -18,30 +18,29 @@ def entrypoint_seeder(dss_db_name, db_map, seeder_inbox):
     while True:
         msg = seeder_inbox.get()
 
-        if msg['type'] != ipc.SEED_CRAWL:
-            continue
+        if msg['type'] == ipc.SEED_CRAWL:
+            seed_crawl(dss_db_fname, msg['job-id'])
 
-        job_id = msg['job-id']
+def seed_crawl(dss_db_fname, job_id):
+    config = get_crawl_config_for_job(dss_db_fname, job_id)
+    seeds = [url for urls in pm.hook.get_seed_urls(config=config) for url in urls]
 
-        config = get_crawl_config_for_job(dss_db_fname, job_id)
-        seeds = [url for urls in pm.hook.get_seed_urls(config=config) for url in urls]
+    con = sqlite3.connect(dss_db_fname)
+    con.isolation_level = None
 
-        con = sqlite3.connect(dss_db_fname)
-        con.isolation_level = None
+    hosts = []
+    try:
+        with con:
+            con.execute('BEGIN')
+            for seed in seeds:
+                url = urlparse(seed)
+                hostname = url.hostname
+                hosts.append(hostname)
+                con.execute('INSERT INTO dss_crawl_queue(job_id, host, url, depth) VALUES (?, ?, ?, 0)', [job_id, hostname, seed])
 
-        hosts = []
-        try:
-            with con:
-                con.execute('BEGIN')
-                for seed in seeds:
-                    url = urlparse(seed)
-                    hostname = url.hostname
-                    hosts.append(hostname)
-                    con.execute('INSERT INTO dss_crawl_queue(job_id, host, url, depth) VALUES (?, ?, ?, 0)', [job_id, hostname, seed])
+            for host in set(hosts):
+                con.execute('INSERT INTO dss_host_rate_limit(host) SELECT ? WHERE NOT EXISTS(SELECT * FROM dss_host_rate_limit WHERE host = ?)', [host, host])
 
-                for host in set(hosts):
-                    con.execute('INSERT INTO dss_host_rate_limit(host) SELECT ? WHERE NOT EXISTS(SELECT * FROM dss_host_rate_limit WHERE host = ?)', [host, host])
-
-                con.execute("UPDATE dss_job SET status = 'running' WHERE id = ?", [job_id])
-        finally:
-            con.close()
+            con.execute("UPDATE dss_job SET status = 'running' WHERE id = ?", [job_id])
+    finally:
+        con.close()
