@@ -31,7 +31,8 @@ def get_seed_urls(config):
 
         candidates = [
             '{}://{}/robots.txt'.format(parsed.scheme, host),
-            '{}://{}/sitemap.xml'.format(parsed.scheme, host)
+            '{}://{}/sitemap.xml'.format(parsed.scheme, host),
+            '{}://{}/sitemap_index.xml'.format(parsed.scheme, host)
         ]
 
         for candidate in candidates:
@@ -68,6 +69,16 @@ def discover_urls(config, url, response):
         sitemaps = list(set([x.split(' ')[1] for x in response['text'].split('\n') if x.startswith('Sitemap: ')]))
         return sitemaps
 
+    is_https = url.startswith('https://')
+
+    # Some plugins generate HTTP sitemap URLs even when served on HTTPS.
+    # Detect and fix that.
+    def fixup(old):
+        if is_https and old.startswith('http://'):
+            return old.replace('http://', 'https://')
+
+        return old
+
     rv = []
     if parsed.path.endswith('.xml'):
         parsed = get_html_parser(response)
@@ -75,15 +86,14 @@ def discover_urls(config, url, response):
         for node in parsed.css('sitemapindex sitemap loc'):
             url = extract_text(node)
             if url:
-                rv.append((url, 0))
+                rv.append((fixup(url), 0))
 
         for node in parsed.css('urlset url loc'):
             url = extract_text(node)
             if url:
-                rv.append((url, 1))
+                rv.append((fixup(url), 1))
 
     return rv
-
 
 @hookimpl
 def config_schema():
