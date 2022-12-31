@@ -46,5 +46,5 @@ def config_schema():
 def config_default_value():
     return [
         # Try to avoid binary file types
-        '(?i)[.](bmp|gif|gz|jpg|jpeg|mpeg|mp3|mp4|pdf|png|tar|webp|wma|wmv|xls|xlsx|xz|zip)'
+        '(?i)[.](bmp|gif|gz|jpg|jpeg|m4a|m4v|mpeg|mp3|mp4|pdf|png|tar|webp|wma|wmv|xls|xlsx|xz|zip)'
     ]
