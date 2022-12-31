@@ -101,10 +101,11 @@ def finish_crawl_queue_item(conn, id, response, fresh, fetch_duration):
 
 def check_for_job_complete(conn, job_id):
     with conn:
-        more_to_do, = conn.execute('SELECT EXISTS(SELECT * FROM dss_crawl_queue WHERE job_id = ?)', [job_id]).fetchone()
+        more_to_do, = conn.execute("SELECT EXISTS(SELECT * FROM dss_crawl_queue WHERE job_id = ?) AND EXISTS(SELECT * FROM dss_job WHERE id = ? AND status != 'cancelled' AND status != 'done')", [job_id, job_id]).fetchone()
 
         if not more_to_do:
-            conn.execute("UPDATE dss_job SET status = 'done', finished_at = strftime('%Y-%m-%d %H:%M:%f') WHERE id = ?", [job_id])
+            conn.execute("UPDATE dss_job SET status = 'done', finished_at = strftime('%Y-%m-%d %H:%M:%f') WHERE id = ? AND finished_at IS NULL", [job_id])
+            conn.execute("DELETE FROM dss_crawl_queue WHERE job_id = ?", [job_id])
 
 def lazy_connection_factory(default, db_map):
     conns = {}

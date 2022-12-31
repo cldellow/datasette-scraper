@@ -119,7 +119,7 @@ async def scraper_crawl_id_cancel(datasette, request):
             job_id, = rv.fetchone()
 
             if job_id:
-                conn.execute("UPDATE dss_job SET finished_at = strftime('%Y-%m-%d %H:%M:%f') WHERE id = ?", [job_id])
+                conn.execute("UPDATE dss_job SET status = 'cancelled', finished_at = strftime('%Y-%m-%d %H:%M:%f') WHERE id = ?", [job_id])
                 conn.execute("DELETE FROM dss_crawl_queue WHERE job_id = ?", [job_id])
 
     db = get_database(datasette)
