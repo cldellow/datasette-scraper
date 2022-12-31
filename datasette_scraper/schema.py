@@ -1,4 +1,4 @@
-current_schema_version = 1000001;
+current_schema_version = 1000002;
 
 schema = """
 PRAGMA user_version = {};
@@ -132,5 +132,5 @@ CREATE INDEX idx_crawl_queue_item ON dss_crawl_queue(job_id, url);
 CREATE INDEX idx_crawl_queue_history_item ON dss_crawl_queue_history(job_id, url);
 CREATE INDEX idx_dss_zstd_dict_host ON dss_zstd_dict(host);
 CREATE INDEX idx_dss_fetch_cache_host ON dss_fetch_cache(host);
-
+CREATE INDEX idx_crawl_queue_host_depth_queued_at ON dss_crawl_queue(host, depth, queued_at);
 """

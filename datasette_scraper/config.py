@@ -34,7 +34,7 @@ def ensure_schema_internal(conn):
             migrator.migrate()
     elif v == current_schema_version:
         pass
-    elif v == 1000000:
+    elif v == 1000000 or v == 1000001:
         # Nothing special required - this just added a table
         with DBMigrator(conn, schema, allow_deletions=True) as migrator:
             migrator.migrate()
