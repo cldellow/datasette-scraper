@@ -9,7 +9,7 @@
 ~100K pages per crawl is the sweet spot.
 
 - Opinionated yet extensible
-  - Many useful things are possible out-of-the-box, or write your own pluggy hooks to go further
+  - Some useful tasks are possible out-of-the-box, or write your own pluggy hooks to go further
 - Leans heavily into SQLite
   - Introspect your crawls via ops tables exposed in Datasette
 - Uses lightweight, fast libraries
@@ -29,222 +29,26 @@ Install this plugin in the same environment as Datasette.
 
 ## Usage
 
-Configure `datasette-scraper` via `metadata.json`:
+Configure `datasette-scraper` via `metadata.json`. You need to enable the plugin
+on a per-database level.
+
+To enable it in the `my-database` database, write something like this:
 
 ```
 {
-  "plugins": {
-    "datasette-scraper": {
-      // CONFIG GOES HERE
-    }
-  }
-}
-```
-
-`datasette-scraper` uses plugins, which can be configured in this block.
-
-A sample config that shows the use of all the plugins that ship with `datasette-scraper`
-looks like:
-
-```jsonc
-{
-  // Where should datasette-scraper store its operational data,
-  // page crawls, etc?
-  //
-  // If omitted, defaults to the first database in the instance.
-  "ops-database": "db-name",
-
-  // The set of crawls to perform.
-  // This may eventually move to a table in SQLite.
-  "crawls": {
-    // A crawl whose name is "hn-top-5"
-    "hn-top-5": {
-      // The starting set of URLs to crawl (optional)
-      "seed-urls": ["https://news.ycombinator.com"],
-
-      // A set of domains whose sitemaps will be discovered via
-      // robots.txt, and used to discover URLs (optional)
-      "seed-sitemaps": ["news.ycombinator.com"],
-
-      // Extract candidate next links from a webpage via CSS selectors
-      "discover-html-urls": {
-        // When an HTML page is fetched, where should we find candidate
-        // URLs to enqueue for crawling?
-
-        // If absent (ie not []), the default is shown below
-        "selectors": [
-          {
-            // Only look for links on pages whose URL matches this regex
-            "url-regex": ".+",
-            "selector": "a",
-            // By default uses DOM inner text; you can specify an attribute to use
-            // instead
-            "attribute": "href"
-          }
-        ],
-      },
-
-      // Whether to discover URLs from the Location header of 3xx redirects
-      "discover-redirect-urls": true,
-
-      // When true, only follows links to pages on the same domain
-      // as the source page
-      "discover-only-same-origin": true,
-
-      // If any of these regexes match, the page will not be queued for crawling.
-      // If absent or empty, no limit
-      // NB: seed URLs will always be crawled
-      "discover-deny": [],
-
-      // If this is present and non-empty, only URLs that match will be enqueued
-      // for crawling.
-      // NB: seed URLs will always be crawled
-      "discover-allow": [
-        {
-          "from": ".+",
-          "to": ".+"
+  "databases": {
+    "my-database": {
+      "plugins": {
+        "datasette-scraper": {
         }
-      ],
-
-      // When discovering URLs, should we rewrite URLs from
-      // https://example.com/collections/foo/products/bar -> https://example.com/products/bar
-      "canonicalize-shopify-urls": true,
-
-      // The maximum distance from a seed that a page can be, and still be crawled.
-      // If absent, no limit
-      "max-depth": 0,
-
-      // The maximum number of pages to be crawled from this crawl
-      // If absent, no limit
-      // NB: seed URLs will always be crawled
-      "max-pages": 5,
-
-      // The maximum number of pages to be crawled per any single domain
-      // If absent, no limit
-      // NB: seed URLs will always be crawled
-      "max-pages-per-domain": 5,
-
-      // Should we cache responses? If yes, when should we re-fetch?
-      // If multiple rules match, the lowest value wins.
-      // no value -> never re-fetch
-      // 0        -> always refetch
-      // x > 0    -> refetch if older than X seconds
-      "fetch-cache": {
-        "staleness": [
-          {
-            // URLs will be tested with 2 values:
-            // their URL, eg https://example.com/
-            // their depth, eg depth:0 for a seed, depth:1 for a page discovered directly from a seed
-            "url-regex": "/news?p=[0-9]+",
-            "max-age": 10,
-          },
-        ]
-      },
-
-      // Extract information like title, metadesc, author, publish date,
-      // preview image.
-      "extract-seo": {
-        // optional; absent implies .*
-        "url-regex": ".*",
-
-        // optional
-        "database": "dbname",
-
-        // optional; defaults to dss_seo
-        "table": "dss_seo",
-
-        // optional; if present, will try to extract body of article
-        "extract-article": true
-      },
-
-      // Extract link graph
-      "extract-links": {
-        // optional; absent implies .*
-        "url-regex": ".*",
-
-        // optional
-        "database": "dbname",
-
-        // optional; defaults to dss_links
-        "table": "dss_links",
-      },
-
-      // Extract JSON LD e-commerce listings
-      "extract-ecommerce-jsonld": {
-        // optional; absent implies .*
-        "url-regex": ".*",
-
-        // optional
-        "database": "dbname",
-
-        // optional; defaults to dss_ecommerce
-        "table": "dss_ecommerce",
-      },
-
-      // Extract Shopify e-commerce listings
-      "extract-ecommerce-shopify": {
-        // optional; absent implies .*
-        "url-regex": ".*",
-
-        // optional
-        "database": "dbname",
-
-        // optional; defaults to dss_ecommerce
-        "table": "dss_ecommerce",
-      },
-
-      // TODO: determine schema for this
-      "extract-selectors": {
-        // TODO: flag to indicate whether we should mark up the source to
-        //       make it more amenable for CSS extraction
-
-        // TODO: how to do invariant things, eg if we wanted to build
-        //       out a join table of categories, we'd extract the category
-        //       from the same root HTML element... how to infer that?
-
-        // TODO: how to do many-to-many, if such a thing exists? maybe it's
-        //       an advanced case and can be ignored.
-        "url-regex": "/garments/",
-
-        // optional
-        "database": "dbname",
-        "extractors": {
-          "patterns": {
-            "selector": ".w-full.container",
-            "attributes": {
-              "url!": [
-                "h3 a",
-                { "attribute": "href" }
-              ],
-              "name": [
-                "h3 a",
-                { "text": true }
-              ],
-              "designer_name": [
-                "h3 + p a",
-                { "text": true }
-              ]
-            }
-          },
-          "pattern_categories": {
-            "selector": ".w-full.container",
-            "attributes": {
-              "url!": [
-                "h3 a",
-                { "attribute": "href" }
-              ],
-              "category!": [
-                "html h1",
-                { "text": true }
-              ]
-            }
-          }
-        ]
       }
     }
   }
 }
 ```
+
+The next time you start datasette, the plugin will create several tables in
+the specified database. Go to the `dss_crawl` table to define a crawl.
 
 ## Usage notes
 
@@ -258,9 +62,13 @@ The ops database's `user_version` pragma will be used to track schema versions.
 ## Architecture
 
 `datasette-scraper` handles the core bookkeeping for scraping--keeping track of
-which URLs have been scraped, rate-limiting, making the actual request. It relies
-on plugins to do almost all the interesting work. For example, following redirects,
-navigating sitemaps, extracting data.
+URLs to be scraped, rate-limiting requests to origins, persisting data into the DB.
+It relies on plugins to do almost all the interesting work. For example, fetching
+the actual pages, following redirects, navigating sitemaps, extracting data.
+
+The tool comes with plugins for common use cases. Some users may want to author
+their own `after_fetch_url` or `extract_from_response` implementations to do custom
+processing.
 
 ### Overview
 
@@ -290,8 +98,8 @@ init --> crawl --> discover
 
 Most plugins will only implement a few of these hooks.
 
-`conn` is a `sqlite3.Connection` to the ops database.
-`config` is the crawl's config.
+- `conn` is a read/write `sqlite3.Connection` to the database
+- `config` is the crawl's config
 
 #### `get_seed_urls(config)`
 
@@ -395,10 +203,14 @@ help validate a user's configuration and show UI to configure a crawl.
 
 ##### config_schema()
 
-Returns a [JSON schema](https://json-schema.org/understanding-json-schema/) describing the configuration this plugin accepts.
+Returns a `ConfigSchema` option that defines how this plugin is configured.
 
-The schema is optional; if omitted, users will have to hand-edit their configurations
-versus using interactive UI tools.
+Configuration is done via [JSON schema](https://json-schema.org/understanding-json-schema/). UI is done via [JSON Forms](https://jsonforms.io/).
+
+Look at the existing plugins to learn how to use this hook.
+
+The schema is optional; if omitted, you will need to configure the plug in
+out of band.
 
 ##### config_default_value()
 
@@ -421,41 +233,3 @@ Now install the dependencies and test dependencies:
 To run the tests:
 
     pytest
-
-## Questions
-
-### Can `extract-selectors` be made user friendly?
-
-e.g. you pick one of the URLs that you crawl. You click a link to post its content to
-a website. The content gets scrubbed a bit first -- `script`, `style` and `svg` tags
-are emptied (but left in place, so the DOM is unchanged).
-
-Then you provide an expected output like:
-
-```
-{
-  "patterns": [
-    {
-      "url!": "https://vikisews.com/vykrojki/shirts-t-shirts-blouses/kaia-blouse/",
-      "name": "Kaia Blouse",
-      "designer": "Viki Sews"
-    }
-  ],
-  "pattern_categories": [
-    {
-      "url!": "https://vikisews.com/vykrojki/shirts-t-shirts-blouses/kaia-blouse/",
-      "category!": "Button-Ups"
-    }
-  ]
-}
-```
-
-Then we try to find a set of transforms that satisfies this, and show you the
-sample output.
-
-At any point, you have a base64-encoded representation of the input that you can
-stash somewhere.
-
-Eventually we could make the UI more user friendly, too.
-
-This could run entirely in an AWS lambda.
