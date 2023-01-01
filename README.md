@@ -49,6 +49,14 @@ To enable it in the `my-database` database, write something like this:
 The next time you start datasette, the plugin will create several tables in
 the specified database. Go to the `dss_crawl` table to define a crawl.
 
+A 10-minute end-to-end walkthrough video is available:
+
+<div align="left">
+      <a href="https://www.youtube.com/watch?v=zrSGnz7ErNI">
+         <img src="https://img.youtube.com/vi/zrSGnz7ErNI/0.jpg" style="width:100%;">
+      </a>
+</div>
+
 ## Usage notes
 
 `datasette-scraper` requires a database in which to track its operational data,
