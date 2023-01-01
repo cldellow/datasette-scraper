@@ -1,7 +1,7 @@
 from setuptools import setup
 import os
 
-VERSION = "0.2"
+VERSION = "0.3"
 
 
 def get_long_description():
@@ -30,7 +30,7 @@ setup(
         "License :: OSI Approved :: Apache Software License"
     ],
     version=VERSION,
-    packages=["datasette_scraper"],
+    packages=["datasette_scraper", "datasette_scraper.plugins"],
     entry_points={"datasette": ["scraper = datasette_scraper"]},
     install_requires=["datasette", "selectolax", "datasette-template-sql", "pluggy", "httpx", "zstandard", "more-itertools"],
     extras_require={"test": ["wheel", "pytest", "pytest-asyncio", "pytest-watch"]},
