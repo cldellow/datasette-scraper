@@ -2,6 +2,7 @@ import datasette
 import html
 from jinja2 import FunctionLoader
 import re
+import markupsafe
 import os
 import json
 from .config import enabled_databases, ensure_schema
@@ -210,6 +211,29 @@ def extra_template_vars(datasette, request):
         }
 
     return extra_vars
+
+@datasette.hookimpl
+def render_cell(database, row, table, column, value):
+    if table != 'dss_job_stats':
+        return None
+
+    def link(label, href):
+        return markupsafe.Markup(
+            '<a href="{href}">{label}</a>'.format(
+                href=markupsafe.escape(href),
+                label=markupsafe.escape(label)
+            )
+        )
+
+    print(row)
+
+    if column == 'host':
+        # http://localhost:8001/test/dss_crawl_queue_history?status_code__lte=299&host__exact=cldellow.com&job_id__exact=2&status_code__gte=200&_sort_desc=processed_at
+        return link(value, '/{}/dss_crawl_queue_history?job_id__exact={}&host__exact={}&_sort_desc=processed_at'.format(database, row[0]['value'], row[1]))
+    elif column.startswith('fetched_') and column.endswith('xx'):
+        start = 100 * int(column[8])
+        return link(value, '/{}/dss_crawl_queue_history?job_id__exact={}&host__exact={}&status_code__gte={}&status_code__lte={}&_sort_desc=processed_at'.format(database, row[0]['value'], row[1], start, start + 99))
+
 
 @datasette.hookimpl
 def register_routes(datasette):
