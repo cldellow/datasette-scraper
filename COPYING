@@ -1,8 +1,11 @@
 datasette-scraper is provided under the Apache 2 license, see LICENSE
 for details.
 
-It uses a database migration library [1] that is copyright 2019-2022
-Stb-tester.com Ltd, and licensed under the MIT License:
+datasette-scraper includes libraries that are licensed under the MIT
+License:
+
+- database migration library [1], copyright 2019-2022 Stb-tester.com Ltd
+- JSON Forms [2], copyright 2019 EclipseSource Munich
 
   Permission is hereby granted, free of charge, to any person obtaining a copy
   of this software and associated documentation files (the "Software"), to deal
@@ -23,3 +26,4 @@ Stb-tester.com Ltd, and licensed under the MIT License:
   SOFTWARE.
 
 [1]: https://david.rothlis.net/declarative-schema-migration-for-sqlite/
+[2]: https://github.com/eclipsesource/jsonforms
