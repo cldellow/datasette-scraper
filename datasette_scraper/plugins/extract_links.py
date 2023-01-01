@@ -43,8 +43,14 @@ def extract_from_response(config, url, response):
         parsed = get_html_parser(response)
         for a in parsed.css('a'):
             attrs = a.attributes
+            dofollow = 1
+
+            if 'rel' in attrs and attrs['rel'] and 'nofollow' in attrs['rel']:
+                dofollow = 0
+
+
             if 'href' in attrs:
-                table.append({'from!': url, 'to!': urljoin(url, attrs['href']), 'text!': a.text().strip()})
+                table.append({'from!': url, 'to!': urljoin(url, attrs['href']), 'text!': a.text().strip(), 'dofollow!': dofollow})
 
     return rv
 
