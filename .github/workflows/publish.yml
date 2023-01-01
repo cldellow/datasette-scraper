@@ -47,5 +47,5 @@ jobs:
         TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
       run: |
         python -m build
-        twine upload dist/* --verbose
+        twine upload dist/*
 
