@@ -240,8 +240,6 @@ def render_cell(database, row, table, column, value):
             )
         )
 
-    print(row)
-
     if table == 'dss_job_stats':
         if column == 'host':
             return link(value, '/{}/dss_crawl_queue_history?job_id__exact={}&host__exact={}&_sort_desc=processed_at'.format(database, row['job_id']['value'], row['host']))
