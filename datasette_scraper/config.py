@@ -3,9 +3,33 @@ from .migrator import DBMigrator
 from .schema import current_schema_version, schema
 from .errors import ScraperError
 
-# TODO: this should look for a configurable database
-def get_database(datasette):
-    return datasette.get_database()
+_plugin_name = 'datasette-scraper'
+
+_enabled_databases = None
+
+def enabled_databases(datasette, empty_if_not_initialized=False):
+    global _enabled_databases
+
+    if not _enabled_databases is None:
+        return _enabled_databases
+
+    if empty_if_not_initialized:
+        return []
+
+    global_config = datasette.plugin_config(_plugin_name)
+
+    rv = []
+
+    for db_name in datasette.databases:
+        local_config = datasette.plugin_config(_plugin_name, db_name)
+
+        if local_config is None:
+            continue
+
+        rv.append(db_name)
+
+    _enabled_databases = rv
+    return _enabled_databases
 
 async def get_db_version(db):
     results = await db.execute('pragma user_version')
@@ -22,26 +46,27 @@ def ensure_wal_mode(conn):
     finally:
         conn.isolation_level = old_level
 
-def ensure_schema_internal(conn):
-    ensure_wal_mode(conn)
-
-    v, = conn.execute("PRAGMA user_version").fetchone()
-
-    if not v:
-        print('Installing datasette-scraper schema')
-        #conn.execute('create table foo(version int)')
-        with DBMigrator(conn, schema, allow_deletions=True) as migrator:
-            migrator.migrate()
-    elif v == current_schema_version:
-        pass
-    elif v == 1000000 or v == 1000001:
-        # Nothing special required - this just added a table
-        with DBMigrator(conn, schema, allow_deletions=True) as migrator:
-            migrator.migrate()
-    else:
-        raise ScraperError('unsupported schema version: {} -- you may need to give datasette-scraper its own database'.format(v))
-
 async def ensure_schema(db):
+    def ensure_schema_internal(conn):
+        ensure_wal_mode(conn)
+
+        v, = conn.execute("PRAGMA user_version").fetchone()
+
+        if not v:
+            print('Installing datasette-scraper schema into db {}'.format(db.name))
+            #conn.execute('create table foo(version int)')
+            with DBMigrator(conn, schema, allow_deletions=True) as migrator:
+                migrator.migrate()
+        elif v == current_schema_version:
+            pass
+        elif v == 1000000 or v == 1000001:
+            # Nothing special required - this just added a table
+            with DBMigrator(conn, schema, allow_deletions=True) as migrator:
+                migrator.migrate()
+        else:
+            raise ScraperError('unsupported schema version in db {}: {} -- you may need to give datasette-scraper its own database'.format(db.name, v))
+
+
     await db.execute_write_fn(ensure_schema_internal, block=True)
     version = await get_db_version(db)
 

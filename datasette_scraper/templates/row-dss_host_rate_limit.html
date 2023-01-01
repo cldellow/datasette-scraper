@@ -40,7 +40,7 @@
 {% endif %}
 
 <h2>Change delay between fetches</h2>
-<form action='/-/scraper/host-rate-limit' method='post'>
+<form action='/{{ dss_db }}/-/scraper/host-rate-limit' method='post'>
     <input type="hidden" name="csrftoken" value="{{ csrftoken() }}">
     <input type='hidden' name='host' value="{{ rows[0]['host'] }}">
     <input type=text name='delay_seconds' value="{{ rows[0]['delay_seconds'] }}">

@@ -107,13 +107,10 @@ def check_for_job_complete(conn, job_id):
             conn.execute("UPDATE dss_job SET status = 'done', finished_at = strftime('%Y-%m-%d %H:%M:%f') WHERE id = ? AND finished_at IS NULL", [job_id])
             conn.execute("DELETE FROM dss_crawl_queue WHERE job_id = ?", [job_id])
 
-def lazy_connection_factory(default, db_map):
+def lazy_connection_factory(db_map):
     conns = {}
 
     def get_db(name):
-        if name is None:
-            name = default
-
         if not name in db_map:
             raise Exception('unknown database name: {}'.format(name))
 
@@ -128,5 +125,14 @@ def lazy_connection_factory(default, db_map):
         conn.execute('pragma synchronous = normal;')
         conns[name] = conn
         return conn
+
+    return get_db
+
+def lazy_connection_factory_with_default(factory, default):
+    def get_db(name):
+        if not name:
+            return factory(default)
+
+        return factory(name)
 
     return get_db

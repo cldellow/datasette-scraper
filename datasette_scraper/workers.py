@@ -3,7 +3,7 @@ import sys
 import os
 import json
 from datasette_scraper import ipc
-from .config import get_database
+from .config import enabled_databases
 from .worker_ops import entrypoint_ops
 from .worker_crawl import entrypoint_crawl
 
@@ -24,18 +24,22 @@ def start_workers(datasette):
         return
 
     print('start_workers pid={}'.format(os.getpid()))
-    dss_db_name = get_database(datasette).name
     db_map = {}
     for k, v in datasette.databases.items():
         if v.is_memory or not v.is_mutable:
             continue
         db_map[k] = v.path
 
-    p = Process(target=entrypoint_ops, args=(dss_db_name, db_map), daemon=True)
+    enabled_dbs = enabled_databases(datasette)
+
+    if not enabled_dbs:
+        raise Exception('datasette-scraper: not enabled in any databases, why are we starting workers?')
+
+    p = Process(target=entrypoint_ops, args=(enabled_dbs, db_map), daemon=True)
     p.start()
     processes.append(('worker_ops', p))
 
     for i in range(NUM_WORKERS):
-        p = Process(target=entrypoint_crawl, args=(dss_db_name, db_map), daemon=True)
+        p = Process(target=entrypoint_crawl, args=(enabled_dbs, db_map), daemon=True)
         p.start()
         processes.append(('worker_crawl', p))

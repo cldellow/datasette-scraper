@@ -6,16 +6,27 @@ from urllib.parse import urljoin
 from datasette_scraper.plugin import pm
 from datasette_scraper import utils, inserts
 
-def entrypoint_crawl(dss_db_name, db_map):
-    factory = utils.lazy_connection_factory(dss_db_name, db_map)
-
-    conn = factory(None)
+def entrypoint_crawl(enabled_dbs, db_map):
+    raw_factory = utils.lazy_connection_factory(db_map)
+    conns = []
+    for db in enabled_dbs:
+        conns.append(raw_factory(db))
 
     try:
         while True:
-            crawl_loop(dss_db_name, factory, conn)
+            all_none = True
+            for db in enabled_dbs:
+                factory = utils.lazy_connection_factory_with_default(raw_factory, db)
+                rv = crawl_loop(db, factory)
+
+                if rv != None:
+                    all_none = False
+
+            if all_none:
+                time.sleep(0.05)
     finally:
-        conn.close()
+        for conn in conns:
+            conn.close()
 
 def get_next_crawl_queue_row(conn):
     # TODO: consider choosing randomly from the next N eligible items, this decreases
@@ -32,7 +43,8 @@ def get_next_crawl_queue_row(conn):
     row = conn.execute("SELECT id, job_id, host, queued_at, url, depth, claimed_at FROM dss_crawl_queue WHERE host IN (SELECT host FROM dss_host_rate_limit WHERE next_fetch_at < strftime('%Y-%m-%d %H:%M:%f')) AND (claimed_at IS NULL OR claimed_at < datetime('now', '-5 minutes')) ORDER BY depth, queued_at LIMIT 1").fetchone()
 
     if not row:
-        time.sleep(0.05)
+        # NB: None (as opposed to other falsy values) signals that there was no work,
+        #     and we should potentially delay before querying again.
         return None
 
     id, job_id, host, queued_at, url, depth, claimed_at = row
@@ -47,7 +59,7 @@ def get_next_crawl_queue_row(conn):
 
         if claim_row.rowcount != 1:
             #print('...failed to claim crawl item job_id={} id={} url={}'.format(job_id, id, url))
-            return None
+            return False
 
     return row
 
@@ -128,18 +140,20 @@ def discover_urls(config, from_url, from_depth, response):
 
     return set(list(new_urls))
 
-def crawl_loop(dss_db_name, factory, conn):
+def crawl_loop(dss_db_name, factory):
+    """Try to process 1 pending URL. Return None to indicate there was no work to be done."""
     #print('crawl_loop running pid={}'.format(os.getpid()))
     # Warning: This is super naive! As we get experience operating at higher volumes,
     # may need to tweak it.
 
     # Try to find a URL to crawl that (a) isn't host rate limited and (b) hasn't been
     # recently claimed by another worker.
+    conn = factory(None)
 
     row = get_next_crawl_queue_row(conn)
 
     if not row:
-        return
+        return row
 
     id, job_id, host, queued_at, url, depth, claimed_at = row
     #print('! found work item {}'.format(row))
@@ -153,7 +167,7 @@ def crawl_loop(dss_db_name, factory, conn):
     if rejected_reason:
         utils.reject_crawl_queue_item(conn, id, rejected_reason)
         utils.check_for_job_complete(conn, job_id)
-        return
+        return True
 
     fresh = False
     start = time.time()
@@ -171,7 +185,7 @@ def crawl_loop(dss_db_name, factory, conn):
                 print('...failed to claim host rate limit for job_id={} host={}'.format(job_id, host))
                 # Release the row we were working on
                 conn.execute('UPDATE dss_crawl_queue SET claimed_at = NULL WHERE id = ?', [id])
-                return None
+                return True
 
 
         fresh = True
@@ -183,12 +197,12 @@ def crawl_loop(dss_db_name, factory, conn):
             # Weird, this should be impossible.
             utils.reject_crawl_queue_item(conn, id, 'fetch_url failed')
             utils.check_for_job_complete(conn, job_id)
-            return
+            return True
 
         if isinstance(response, Exception):
             utils.reject_crawl_queue_item(conn, id, repr(response))
             utils.check_for_job_complete(conn, job_id)
-            return
+            return True
 
         fetch_duration = math.ceil(1000 * (time.time() - start))
 
@@ -216,3 +230,4 @@ def crawl_loop(dss_db_name, factory, conn):
 
     utils.finish_crawl_queue_item(conn, id, response, fresh, fetch_duration)
     utils.check_for_job_complete(conn, job_id)
+    return True

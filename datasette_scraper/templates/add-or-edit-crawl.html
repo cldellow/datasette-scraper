@@ -202,7 +202,7 @@ onChange = ({ errors, data }) => {
 </script>
 
 <div id='editor'></div>
-<form action='/-/scraper/upsert' method='post'>
+<form action='/{{ dss_db }}/-/scraper/upsert' method='post'>
   <input type="hidden" name="csrftoken" value="{{ csrftoken() }}">
   <input id='scraper_id' type='hidden' name='id' value='{{ dss_id }}'/>
   <input id='scraper_config' type='hidden' name='config' value=''/>

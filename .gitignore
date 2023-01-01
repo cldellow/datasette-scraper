@@ -12,3 +12,4 @@ dist
 build
 editor.bundle.js
 test.db*
+metadata.json

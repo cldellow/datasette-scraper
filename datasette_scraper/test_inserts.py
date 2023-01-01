@@ -1,10 +1,11 @@
 import pytest
-from .utils import lazy_connection_factory
+from .utils import lazy_connection_factory, lazy_connection_factory_with_default
 from .inserts import handle_insert
 
 def test_lazy_connection_factory(tmp_path):
     db_name = tmp_path / "db.sqlite"
-    factory = lazy_connection_factory('default', { 'default': db_name })
+    raw_factory = lazy_connection_factory({ 'default': db_name })
+    factory = lazy_connection_factory_with_default(raw_factory, 'default')
 
     conn = factory(None)
     conn2 = factory('default')
@@ -15,7 +16,8 @@ def test_lazy_connection_factory(tmp_path):
 
 def test_inserts(tmp_path):
     db_name = tmp_path / "db.sqlite"
-    factory = lazy_connection_factory('default', { 'default': db_name })
+    raw_factory = lazy_connection_factory({ 'default': db_name })
+    factory = lazy_connection_factory_with_default(raw_factory, 'default')
 
     handle_insert(factory, { 'tab': [ { 'a!': 'A', 'b': 2} ] })
 

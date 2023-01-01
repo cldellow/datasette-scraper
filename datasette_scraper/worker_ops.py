@@ -11,40 +11,42 @@ def queue_discover_missing_dictionaries(conn):
     with conn:
         conn.execute('INSERT INTO dss_ops(type) VALUES (?)', [ipc.DISCOVER_MISSING_DICTIONARIES])
 
-def entrypoint_ops(dss_db_name, db_map):
-    factory = lazy_connection_factory(dss_db_name, db_map)
+def entrypoint_ops(enabled_dbs, db_map):
+    raw_factory = lazy_connection_factory(db_map)
 
-    conn = factory(None)
-
-    queue_discover_missing_dictionaries(conn)
+    for db in enabled_dbs:
+        conn = raw_factory(db)
+        queue_discover_missing_dictionaries(conn)
 
     while True:
-        next_op = conn.execute('SELECT id, type, config FROM dss_ops WHERE finished_at IS NULL ORDER BY id LIMIT 1').fetchone()
+        for db in enabled_dbs:
+            conn = raw_factory(db)
+            next_op = conn.execute('SELECT id, type, config FROM dss_ops WHERE finished_at IS NULL ORDER BY id LIMIT 1').fetchone()
 
-        if not next_op:
-            time.sleep(0.1)
-            continue
+            if not next_op:
+                time.sleep(0.1)
+                continue
 
-        op_id, type, config = next_op
-        config = json.loads(config)
-        print('dss_ops: id={} type={} config={}'.format(op_id, type, config))
+            op_id, type, config = next_op
+            config = json.loads(config)
+            print('dss_ops: db={} id={} type={} config={}'.format(db, op_id, type, config))
 
-        if type == ipc.SEED_CRAWL:
-            seed_crawl(factory, config['job-id'])
-        elif type == ipc.DISCOVER_MISSING_DICTIONARIES:
-            discover_missing_dictionaries(factory)
-        elif type == ipc.TRAIN_DICTIONARY:
-            train_dictionary(conn, config['host'])
-        elif type == ipc.RECOMPRESS_ALL:
-            recompress_all(conn)
-        elif type == ipc.RECOMPRESS_HOST:
-            recompress_host(conn, config['host'])
-        elif type == ipc.RECOMPRESS_HASH:
-            recompress_hash(conn, config['request_hash'])
-        else:
-            print('unknown dss_ops: id={} type={} config={}'.format(op_id, type, config))
-        with conn:
-            conn.execute("UPDATE dss_ops SET finished_at = strftime('%Y-%m-%d %H:%M:%f') WHERE id = ?", [op_id])
+            if type == ipc.SEED_CRAWL:
+                seed_crawl(conn, config['job-id'])
+            elif type == ipc.DISCOVER_MISSING_DICTIONARIES:
+                discover_missing_dictionaries(conn)
+            elif type == ipc.TRAIN_DICTIONARY:
+                train_dictionary(conn, config['host'])
+            elif type == ipc.RECOMPRESS_ALL:
+                recompress_all(conn)
+            elif type == ipc.RECOMPRESS_HOST:
+                recompress_host(conn, config['host'])
+            elif type == ipc.RECOMPRESS_HASH:
+                recompress_hash(conn, config['request_hash'])
+            else:
+                print('unknown dss_ops: id={} type={} config={}'.format(op_id, type, config))
+            with conn:
+                conn.execute("UPDATE dss_ops SET finished_at = strftime('%Y-%m-%d %H:%M:%f') WHERE id = ?", [op_id])
 
 def recompress_all(conn):
     hosts = conn.execute('SELECT host FROM dss_fetch_cache GROUP BY 1').fetchall()
@@ -112,8 +114,7 @@ def train_dictionary(conn, host):
             [ipc.RECOMPRESS_HOST, json.dumps({'host': host})]
         )
 
-def discover_missing_dictionaries(factory):
-    conn = factory(None)
+def discover_missing_dictionaries(conn):
     hosts = conn.execute('SELECT host FROM dss_fetch_cache GROUP BY 1 HAVING COUNT(*) > 100 EXCEPT SELECT host FROM dss_zstd_dict').fetchall()
 
     for host in hosts:
@@ -130,8 +131,7 @@ def discover_missing_dictionaries(factory):
                 ]
             )
 
-def seed_crawl(factory, job_id):
-    conn = factory(None)
+def seed_crawl(conn, job_id):
     config = get_crawl_config_for_job_id(conn, job_id)
     seeds = [url for urls in pm.hook.get_seed_urls(config=config) for url in urls]
 

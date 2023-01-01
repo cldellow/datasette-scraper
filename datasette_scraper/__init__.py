@@ -4,9 +4,9 @@ from jinja2 import FunctionLoader
 import re
 import os
 import json
-from .config import get_database, ensure_schema
+from .config import enabled_databases, ensure_schema
 from .plugin import pm
-from .routes import routes
+from .routes import get_routes
 from .workers import start_workers
 from collections import namedtuple
 
@@ -23,10 +23,13 @@ class JsonString:
 @datasette.hookimpl
 def startup(datasette):
     async def inner():
-        db = get_database(datasette)
-        await ensure_schema(db)
+        enabled_databases = config.enabled_databases(datasette)
+        for db_name in enabled_databases:
+            await ensure_schema(datasette.databases[db_name])
 
-        start_workers(datasette)
+        if enabled_databases:
+            start_workers(datasette)
+
 
     return inner
 
@@ -75,34 +78,42 @@ def get_metadata(datasette, key, database, table):
         'databases': {}
     }
 
-    db_name = get_database(datasette).name
+    # There's a weird circular dependency issue here.
+    # When we called enabled_databases, it'll check plugin
+    # configuration to see if it's enabled.
+    #
+    # Which means it's not safe for _us_ to call enabled_databases
+    # until _after_ it has initialized.
+    for db_name in enabled_databases(datasette, empty_if_not_initialized=True):
+        rv['databases'][db_name] = {
+            'tables': {
+                'dss_crawl_queue': {
+                    'sort_desc': 'id'
+                },
+                'dss_crawl_queue_history': {
+                    'sort_desc': 'processed_at'
+                },
+                'dss_fetch_cache': {
+                    'sort_desc': 'fetched_at'
+                },
+                'dss_job': {
+                    'sort_desc': 'id'
+                },
+                'dss_job_stats': {
+                    'sort_desc': 'job_id'
+                },
 
-    rv['databases'][db_name] = {
-        'tables': {
-            'dss_crawl_queue': {
-                'sort_desc': 'id'
-            },
-            'dss_crawl_queue_history': {
-                'sort_desc': 'processed_at'
-            },
-            'dss_fetch_cache': {
-                'sort_desc': 'fetched_at'
-            },
-            'dss_job': {
-                'sort_desc': 'id'
-            },
-            'dss_job_stats': {
-                'sort_desc': 'job_id'
-            },
-
+            }
         }
-    }
 
     return rv
 
 @datasette.hookimpl
 def extra_template_vars(datasette, request):
     """Add dss_schema, dss_default_config, dss_id variables."""
+
+    # TODO: this is pretty janky! It would be nice to add these only
+    #       on our templates.
 
     known_groups = {
         'Seeds': 1,
@@ -148,6 +159,8 @@ def extra_template_vars(datasette, request):
 
         id = 0
 
+        default_config['name'] = 'Crawl name'
+
         category_schemas = []
         for key in sorted(groups.keys(), key=lambda x: known_groups[x]):
             elements = sorted(groups[key], key=lambda x: x[1])
@@ -172,11 +185,16 @@ def extra_template_vars(datasette, request):
             ]
         }
 
-
-        m = re.search('/dss_crawl/([0-9]+)$', request.path)
+        dss_db = None
+        m = re.search('^/([^/]+)/', request.path)
         if m:
-            id = int(m.group(1))
-            db = get_database(datasette)
+            dss_db = m.group(1)
+
+        m = re.search('/([^/]+)/dss_crawl/([0-9]+)$', request.path)
+        if m:
+            db_name = m.group(1)
+            db = datasette.databases[db_name]
+            id = int(m.group(2))
             rv = await db.execute('SELECT name, config FROM dss_crawl WHERE id = ?', [id])
             for row in rv:
                 config = json.loads(row['config'])
@@ -187,11 +205,12 @@ def extra_template_vars(datasette, request):
             "dss_schema": JsonString(schema),
             "dss_uischema": JsonString(uischema),
             "dss_default_config": JsonString(default_config),
+            "dss_db": dss_db,
             "dss_id": id
         }
 
     return extra_vars
 
 @datasette.hookimpl
-def register_routes():
-    return routes
+def register_routes(datasette):
+    return get_routes(datasette)
