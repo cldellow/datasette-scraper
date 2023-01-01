@@ -33,9 +33,9 @@ def start_workers(datasette):
 
     p = Process(target=entrypoint_ops, args=(dss_db_name, db_map), daemon=True)
     p.start()
-    processes.append(('seeder', p))
+    processes.append(('worker_ops', p))
 
     for i in range(NUM_WORKERS):
         p = Process(target=entrypoint_crawl, args=(dss_db_name, db_map), daemon=True)
         p.start()
-        processes.append(('worker', p))
+        processes.append(('worker_crawl', p))
