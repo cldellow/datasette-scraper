@@ -154,10 +154,9 @@
 {% endif %}
 
 <h2>Create dictionary</h2>
-<p>Site-specific zstd dictionaries can improve your compression efficiency.</p>
-<form method='post' action='/{{ dss_db }}/-/scraper/train-zstd-dict'>
+<p>Site-specific zstd dictionaries can improve your compression efficiency. These can be created for any site with more than 100 fetched URLs.</p>
+<form method='post' action='/{{ dss_db }}/-/scraper/discover-missing-dictionaries'>
     <input type="hidden" name="csrftoken" value="{{ csrftoken() }}">
-    <input type='text' name='host' placeholder='Hostname for which to create dictionary, e.g. example.com'>
     <input type='submit' value='Create dictionary'>
 </form>
 

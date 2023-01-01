@@ -18,6 +18,13 @@ async def seed_crawl(db, job_id):
         block=True
     )
 
+async def discover_missing_dictionaries(db):
+    await db.execute_write(
+        'INSERT INTO dss_ops(type) VALUES (?)',
+        [ipc.DISCOVER_MISSING_DICTIONARIES],
+        block=True
+    )
+
 def start_workers(datasette):
     # Don't start background workers if we're being tested under pytest.
     if "pytest" in sys.modules:

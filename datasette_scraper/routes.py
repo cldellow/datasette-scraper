@@ -2,7 +2,7 @@ import json
 from datasette import Response
 from datasette.utils import tilde_encode
 from .config import enabled_databases
-from .workers import seed_crawl
+from .workers import seed_crawl, discover_missing_dictionaries
 from .zstd import train_zstd_dict
 
 async def crawl_exists(datasette, db, crawl_id):
@@ -39,18 +39,15 @@ async def scraper_upsert(datasette, request):
 
     return redirect_to_crawl(db_name, id)
 
-async def scraper_train_zstd_dict(datasette, request):
+async def scraper_discover_missing_dictionaries(datasette, request):
     if request.method != 'POST':
         return Response('Unexpected method', status=405)
 
-    form = await request.post_vars()
-
-    host = form['host']
     db_name = request.url_vars['db']
     db = datasette.databases[db_name]
+    await discover_missing_dictionaries(db)
 
-    dict_id = await train_zstd_dict(db, host)
-    return Response.redirect('/{}/dss_zstd_dict/{}'.format(db.name, dict_id))
+    return Response.redirect('/{}/dss_zstd_dict'.format(db.name))
 
 async def scraper_host_rate_limit(datasette, request):
     if request.method != 'POST':
@@ -164,6 +161,6 @@ def get_routes(datasette):
         routes.append((r"^/(?P<db>{})/-/scraper/host-rate-limit$".format(db), scraper_host_rate_limit))
         routes.append((r"^/(?P<db>{})/-/scraper/crawl/(?P<id>[0-9]+)/start$".format(db), scraper_crawl_id_start))
         routes.append((r"^/(?P<db>{})/-/scraper/crawl/(?P<id>[0-9]+)/cancel$".format(db), scraper_crawl_id_cancel))
-        routes.append((r"^/(?P<db>{})/-/scraper/train-zstd-dict$".format(db), scraper_train_zstd_dict))
+        routes.append((r"^/(?P<db>{})/-/scraper/discover-missing-dictionaries$".format(db), scraper_discover_missing_dictionaries))
 
     return routes
