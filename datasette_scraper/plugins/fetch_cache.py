@@ -120,6 +120,6 @@ def config_default_value():
     return [
             {
                 'url-regex': '.*',
-                'max-age': 3600
+                'max-age': 604800
             }
         ]
