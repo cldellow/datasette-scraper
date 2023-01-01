@@ -1,14 +1,17 @@
 import datasette
 import html
+import glob
 from jinja2 import FunctionLoader
 import re
 import markupsafe
 import os
 import json
+from .hookspecs import hookimpl
 from .config import enabled_databases, ensure_schema
 from .plugin import pm
 from .routes import get_routes
 from .workers import start_workers
+from .utils import module_from_path
 from collections import namedtuple
 
 ConfigSchema = namedtuple('ConfigSchema', ['schema', 'uischema', 'key', 'group', 'sort'], defaults=(None, 1000))
@@ -29,6 +32,18 @@ def startup(datasette):
             await ensure_schema(datasette.databases[db_name])
 
         if enabled_databases:
+            # TODO: this isn't a documented surface area, so it's a bit skeezy to be using it
+            if datasette.plugins_dir:
+                for filepath in glob.glob(os.path.join(datasette.plugins_dir, "*.py")):
+                    if not os.path.isfile(filepath):
+                        continue
+                    mod = module_from_path(filepath, name=os.path.basename(filepath))
+                    try:
+                        pm.register(mod)
+                    except ValueError:
+                        # Plugin already registered
+                        pass
+
             start_workers(datasette)
 
 

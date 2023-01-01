@@ -1,6 +1,7 @@
 from datasette_scraper.config import ensure_wal_mode
 import sqlite3
 import json
+import types
 from more_itertools import batched
 from selectolax.parser import HTMLParser
 from urllib.parse import urlparse
@@ -136,3 +137,13 @@ def lazy_connection_factory_with_default(factory, default):
         return factory(name)
 
     return get_db
+
+def module_from_path(path, name):
+    # Stolen from https://github.com/simonw/datasette/blob/013496862f4d4b441ab61255242b838b24287607/datasette/utils/__init__.py#L741
+    # Adapted from http://sayspy.blogspot.com/2011/07/how-to-import-module-from-just-file.html
+    mod = types.ModuleType(name)
+    mod.__file__ = path
+    with open(path, "r") as file:
+        code = compile(file.read(), path, "exec", dont_inherit=True)
+    exec(code, mod.__dict__)
+    return mod
