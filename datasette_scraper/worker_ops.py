@@ -11,7 +11,7 @@ def queue_discover_missing_dictionaries(conn):
     with conn:
         conn.execute('INSERT INTO dss_ops(type) VALUES (?)', [ipc.DISCOVER_MISSING_DICTIONARIES])
 
-def entrypoint_seeder(dss_db_name, db_map):
+def entrypoint_ops(dss_db_name, db_map):
     factory = lazy_connection_factory(dss_db_name, db_map)
 
     conn = factory(None)

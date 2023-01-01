@@ -61,7 +61,8 @@ def prepare_jinja2_environment(env, datasette):
             contents = f.read()
             f.close()
 
-            # TODO: this should return True in prod, I think?
+            # TODO: this should return True in prod, I think? Although maybe
+            #       just a performance improvement, so it's fine.
             return contents, path, lambda: False
         except FileNotFoundError:
             return None

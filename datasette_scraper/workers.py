@@ -1,16 +1,15 @@
-from multiprocessing import Process
+from multiprocessing import Process, cpu_count
 import sys
 import os
 import json
 from datasette_scraper import ipc
 from .config import get_database
-from .seeder import entrypoint_seeder
-from .worker import entrypoint_worker
+from .worker_ops import entrypoint_ops
+from .worker_crawl import entrypoint_crawl
 
 processes = []
 
-# TODO: this should be configurable / use a sane default
-NUM_WORKERS = 16
+NUM_WORKERS = cpu_count()
 
 async def seed_crawl(db, job_id):
     await db.execute_write(
@@ -32,11 +31,11 @@ def start_workers(datasette):
             continue
         db_map[k] = v.path
 
-    p = Process(target=entrypoint_seeder, args=(dss_db_name, db_map), daemon=True)
+    p = Process(target=entrypoint_ops, args=(dss_db_name, db_map), daemon=True)
     p.start()
     processes.append(('seeder', p))
 
     for i in range(NUM_WORKERS):
-        p = Process(target=entrypoint_worker, args=(dss_db_name, db_map), daemon=True)
+        p = Process(target=entrypoint_crawl, args=(dss_db_name, db_map), daemon=True)
         p.start()
         processes.append(('worker', p))

@@ -98,8 +98,6 @@ async def scraper_crawl_id_start(datasette, request):
     rv = await db.execute_write("INSERT INTO dss_job(crawl_id) VALUES (?)", [id], block=True);
     job_id = rv.lastrowid
 
-    # TODO: handle UNIQUE constraint failed: dss_job.crawl_id
-
     await seed_crawl(db, job_id)
 
     return redirect_to_crawl(datasette, id)

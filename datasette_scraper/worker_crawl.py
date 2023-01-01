@@ -6,7 +6,7 @@ from urllib.parse import urljoin
 from datasette_scraper.plugin import pm
 from datasette_scraper import utils, inserts
 
-def entrypoint_worker(dss_db_name, db_map):
+def entrypoint_crawl(dss_db_name, db_map):
     factory = utils.lazy_connection_factory(dss_db_name, db_map)
 
     conn = factory(None)
