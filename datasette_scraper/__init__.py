@@ -214,7 +214,7 @@ def extra_template_vars(datasette, request):
 
 @datasette.hookimpl
 def render_cell(database, row, table, column, value):
-    if table != 'dss_job_stats':
+    if table != 'dss_job_stats' and table != 'dss_extract_stats':
         return None
 
     def link(label, href):
@@ -227,12 +227,19 @@ def render_cell(database, row, table, column, value):
 
     print(row)
 
-    if column == 'host':
-        # http://localhost:8001/test/dss_crawl_queue_history?status_code__lte=299&host__exact=cldellow.com&job_id__exact=2&status_code__gte=200&_sort_desc=processed_at
-        return link(value, '/{}/dss_crawl_queue_history?job_id__exact={}&host__exact={}&_sort_desc=processed_at'.format(database, row[0]['value'], row[1]))
-    elif column.startswith('fetched_') and column.endswith('xx'):
-        start = 100 * int(column[8])
-        return link(value, '/{}/dss_crawl_queue_history?job_id__exact={}&host__exact={}&status_code__gte={}&status_code__lte={}&_sort_desc=processed_at'.format(database, row[0]['value'], row[1], start, start + 99))
+    if table == 'dss_job_stats':
+        if column == 'host':
+            return link(value, '/{}/dss_crawl_queue_history?job_id__exact={}&host__exact={}&_sort_desc=processed_at'.format(database, row['job_id']['value'], row['host']))
+        elif column.startswith('fetched_') and column.endswith('xx'):
+            start = 100 * int(column[8])
+            return link(value, '/{}/dss_crawl_queue_history?job_id__exact={}&host__exact={}&status_code__gte={}&status_code__lte={}&_sort_desc=processed_at'.format(database, row['job_id']['value'], row['host'], start, start + 99))
+
+    if table == 'dss_extract_stats':
+        if column == 'database':
+            return link(value, '/{}'.format(row['database']))
+
+        if column == 'tbl':
+            return link(value, '/{}/{}'.format(row['database'], row['tbl']))
 
 
 @datasette.hookimpl
