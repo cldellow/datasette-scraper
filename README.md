@@ -53,7 +53,7 @@ A 10-minute end-to-end walkthrough video is available:
 
 <div align="left">
       <a href="https://www.youtube.com/watch?v=zrSGnz7ErNI">
-         <img src="https://img.youtube.com/vi/zrSGnz7ErNI/0.jpg" style="width:100%;">
+         <img src="https://img.youtube.com/vi/zrSGnz7ErNI/maxresdefault.jpg" style="width:100%;">
       </a>
 </div>
 
