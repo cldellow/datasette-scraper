@@ -1,7 +1,7 @@
 import sqlite3
 
 def remove_sigil(key):
-    if key[-1] == '!' or key[-1] == '?':
+    if key[-1] == '!':
         return key[:-1]
 
     return key
@@ -63,7 +63,7 @@ def handle(counts, factory, dbname, tablename, obj):
                 updated += 1
         except sqlite3.OperationalError as e:
             if e.args[0] == 'no such table: {}'.format(tablename):
-                colspec = ',\n'.join(['  {} ANY {}'.format(quote(remove_sigil(k)), 'NOT NULL' if k[-1] != '?' else '')  for k in keys])
+                colspec = ',\n'.join(['  {} ANY {}'.format(quote(remove_sigil(k)), 'NOT NULL' if k[-1] == '!' else '')  for k in keys])
 
                 pkeyspec = ''
                 if pkeys:
@@ -77,7 +77,7 @@ def handle(counts, factory, dbname, tablename, obj):
                 needs_column = e.args[0].split(' ')[-1]
                 for k in keys:
                     if remove_sigil(k) == needs_column:
-                        alter_stmt = 'ALTER TABLE {} ADD COLUMN {} ANY {}'.format(quote(tablename), quote(needs_column), 'NOT NULL' if k[-1] != '?' else '')
+                        alter_stmt = 'ALTER TABLE {} ADD COLUMN {} ANY'.format(quote(tablename), quote(needs_column))
                         #print(alter_stmt)
                         conn.execute(alter_stmt)
                         retry = True

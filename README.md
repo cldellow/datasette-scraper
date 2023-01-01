@@ -174,16 +174,13 @@ This hook is useful for:
   - restricting crawls to same origin
   - resetting depth for pagination
 
-#### `extract_from_response(scraper, config, url, response)`
-
-- TODO: do we care about trying to model relationships? Maybe we just rely
-        on convention, and you have to manually extract all the tuples yourself.
+#### `extract_from_response(config, url, response)`
 
 Returns an object of rows-to-be-inserted-or-upserted:
 
 ```jsonc
 {
-  "dbname": {  // can be omitted, in which case, first DB will be used
+  "dbname": {  // can be omitted, in which case, current DB will be used
     "tablename": [
       {
         "id!": "cldellow@gmail.com",  // ! indicates pkey, compound OK
@@ -194,6 +191,10 @@ Returns an object of rows-to-be-inserted-or-upserted:
   }
 }
 ```
+
+Any missing tables or columns will be created. Columns will have `ANY` data type,
+and be nullable. If you'd like to control the schema more carefully, please
+create the table manually.
 
 #### Metadata hooks
 
