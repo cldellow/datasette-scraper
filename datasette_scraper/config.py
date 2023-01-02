@@ -59,8 +59,8 @@ async def ensure_schema(db):
                 migrator.migrate()
         elif v == current_schema_version:
             pass
-        elif v == 1000000 or v == 1000001:
-            # Nothing special required - this just added a table
+        elif v == 1000000 or v == 1000001 or v == 1000002:
+            # Nothing special required - these just added tables/columns/indexes
             with DBMigrator(conn, schema, allow_deletions=True) as migrator:
                 migrator.migrate()
         else:

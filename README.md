@@ -17,8 +17,8 @@
   - [httpx](https://www.python-httpx.org/) for HTTP requests
   - [pluggy](https://pluggy.readthedocs.io/en/stable/) for extensibility
   - [zstandard](https://github.com/indygreg/python-zstandard) for efficiently compressing HTTP responses
-- **Not for adversarial crawling**
-  - Want to crawl a site that blocks bots? You're on your own
+
+**Not for adversarial crawling**. Want to crawl a site that blocks bots? You're on your own.
 
 ## Installation
 
@@ -189,20 +189,52 @@ Returns an object of rows-to-be-inserted-or-upserted:
 ```jsonc
 {
   "dbname": {  // can be omitted, in which case, current DB will be used
-    "tablename": [
+    "users": [
       {
         "id!": "cldellow@gmail.com",  // ! indicates pkey, compound OK
         "name": "Colin",
-        "age": 37
+      },
+      {
+        "id!": "santa@northpole.com",
+        "name": "Santa Claus",
+      }
+    ],
+    "places": [
+      {
+        "id@": "santa@northpole.com",
+        "__delete": true
+      },
+      {
+        "id@": "cldellow@gmail.com",
+        "city": "Kitchener",
+      },
+      {
+        "id@": "cldellow@gmail.com",
+        "city": "Dawson Creek"
       }
     ]
   }
 }
 ```
 
-Any missing tables or columns will be created. Columns will have `ANY` data type,
-and be nullable. If you'd like to control the schema more carefully, please
-create the table manually.
+Column names can have sigils at the end:
+- `!` says the column is part of the pkey; there can be at most 1 row with this value
+- `@` says the column should be indexed; there can be multiple rows with this value
+
+Columns with sigils must be known at table creation time. Although you can have
+multiple columns with sigils, you cannot mix `!` and `@` sigils in the same table.
+
+Any missing tables or columns will be created. Columns will have `ANY` data type.
+Columns will be nullable unless they have the `!` sigil.
+
+You can indicate that a row should be deleted by emitting `__delete` key in your object.
+
+`datasette-scraper` may commit your changes to the database in batches in order to
+reduce write transactions and improve throughput. It may also elide
+DELETE/INSERT statements entirely if it determines that the state of the database
+would be unchanged.
+
+If you'd like to control the schema more carefully, please create the table manually.
 
 #### Metadata hooks
 

@@ -1,7 +1,7 @@
 import sqlite3
 
 def remove_sigil(key):
-    if key[-1] == '!':
+    if key[-1] == '!' or key[-1] == '@':
         return key[:-1]
 
     return key
@@ -13,10 +13,43 @@ def remove_sigils(keys):
     return [remove_sigil(key) for key in keys]
 
 def handle(counts, factory, dbname, tablename, obj):
+    tpl = (dbname, tablename)
+
     inserted = 0
     updated = 0
+    deleted = 0
 
     conn = factory(dbname)
+
+    if '__delete' in obj:
+        clause = {}
+        for k, v in obj.items():
+            if k == '__delete':
+                continue
+
+            clause[k] = v
+
+        try:
+            with conn:
+                rv = conn.execute(
+                    'DELETE FROM {} WHERE {}'.format(
+                        quote(tablename),
+                        ', '.join([quote(remove_sigil(k)) + ' = ?' for k in clause.keys()])
+                    ),
+                    list(clause.values())
+                )
+                deleted += rv.rowcount
+
+            if tpl in counts:
+                counts[tpl] = (counts[tpl][0] + inserted, counts[tpl][1] + updated, counts[tpl][2] + deleted)
+            else:
+                counts[tpl] = (inserted, updated, deleted)
+
+            return
+        except:
+            # The delete might fail because the table hasn't been created yet; ignore it
+            return
+
 
     args = [
         quote(tablename),
@@ -72,6 +105,12 @@ def handle(counts, factory, dbname, tablename, obj):
                 create_stmt = 'CREATE TABLE {} (\n{}{})'.format(quote(tablename), colspec, pkeyspec)
                 #print(create_stmt)
                 conn.execute(create_stmt)
+
+                indexed_columns = [remove_sigil(k) for k in keys if k.endswith('@')]
+
+                if indexed_columns:
+                    create_index_stmt = 'CREATE INDEX {} ON {}({})'.format(quote("idx_" + tablename + "_multiple"), quote(tablename), ', '.join([quote(col) for col in indexed_columns]))
+                    conn.execute(create_index_stmt)
                 retry = True
             elif e.args[0].startswith('table {} has no column named '.format(tablename)):
                 needs_column = e.args[0].split(' ')[-1]
@@ -88,12 +127,10 @@ def handle(counts, factory, dbname, tablename, obj):
             else:
                 raise
 
-    tpl = (dbname, tablename)
-
     if tpl in counts:
-        counts[tpl] = (counts[tpl][0] + inserted, counts[tpl][1] + updated)
+        counts[tpl] = (counts[tpl][0] + inserted, counts[tpl][1] + updated, counts[tpl][2] + deleted)
     else:
-        counts[tpl] = (inserted, updated)
+        counts[tpl] = (inserted, updated, deleted)
 
 
 def handle_insert(factory, insert):

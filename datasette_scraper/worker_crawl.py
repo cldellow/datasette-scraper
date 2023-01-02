@@ -224,8 +224,8 @@ def crawl_loop(dss_db_name, factory):
         if insert:
             rv = inserts.handle_insert(factory, insert)
 
-            for ((dbname, tablename), (inserted, updated)) in rv.items():
-                conn.execute('INSERT INTO dss_extract_stats(job_id, database, tbl, inserted, updated) VALUES (?, ?, ?, ?, ?) ON CONFLICT(job_id, database, tbl) DO UPDATE SET inserted = inserted + ?, updated = updated + ?', [job_id, dbname or dss_db_name, tablename, inserted, updated, inserted, updated])
+            for ((dbname, tablename), (inserted, updated, deleted)) in rv.items():
+                conn.execute('INSERT INTO dss_extract_stats(job_id, database, tbl, inserted, updated, deleted) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(job_id, database, tbl) DO UPDATE SET inserted = inserted + ?, updated = updated + ?, deleted = deleted + ?', [job_id, dbname or dss_db_name, tablename, inserted, updated, deleted, inserted, updated, deleted])
 
 
     utils.finish_crawl_queue_item(conn, id, response, fresh, fetch_duration)

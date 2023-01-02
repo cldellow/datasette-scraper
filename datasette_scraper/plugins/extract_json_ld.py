@@ -1,20 +1,21 @@
 import re
+import json
 from ..hookspecs import hookimpl
 from ..utils import get_html_parser
 from urllib.parse import urljoin
 
-EXTRACT_LINKS = 'extract-links'
+EXTRACT_JSON_LD = 'extract-json-ld'
 
 _re = {}
 
 @hookimpl
 def extract_from_response(config, url, response):
-    if not EXTRACT_LINKS in config:
+    if not EXTRACT_JSON_LD in config:
         return {}
 
     rv = {}
 
-    for options in config[EXTRACT_LINKS]:
+    for options in config[EXTRACT_JSON_LD]:
         if 'url-regex' in options:
             regex = options['url-regex']
             if regex in _re:
@@ -39,19 +40,15 @@ def extract_from_response(config, url, response):
         else:
             table = database[tablename] = []
 
-        table.append({'from@': url, '__delete': True})
         # Get all the links
         parsed = get_html_parser(response)
-        for a in parsed.css('a'):
-            attrs = a.attributes
-            dofollow = 1
-
-            if 'rel' in attrs and attrs['rel'] and 'nofollow' in attrs['rel']:
-                dofollow = 0
-
-
-            if 'href' in attrs:
-                table.append({'from@': url, 'to': urljoin(url, attrs['href']), 'text': a.text().strip(), 'dofollow': dofollow})
+        table.append({'url@': url, '__delete': True})
+        for script in parsed.css('script[type="application/ld+json"]'):
+            try:
+                parsed = json.dumps(json.loads(script.text()))
+                table.append({'url@': url, 'json': parsed})
+            except:
+                pass
 
     return rv
 
@@ -79,10 +76,11 @@ def config_schema():
         },
         uischema = {
             "type": "Control",
-            "scope": '#/properties/{}'.format(EXTRACT_LINKS),
-            'label': 'Extract link graph'
+            "scope": '#/properties/{}'.format(EXTRACT_JSON_LD),
+            'label': 'Extract JSON+LD entries'
         },
-        key = EXTRACT_LINKS,
+        key = EXTRACT_JSON_LD,
+        sort = 2000,
         group = 'Extracting',
     )
 

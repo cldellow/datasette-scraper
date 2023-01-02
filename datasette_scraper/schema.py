@@ -1,4 +1,4 @@
-current_schema_version = 1000002;
+current_schema_version = 1000003;
 
 schema = """
 PRAGMA user_version = {};
@@ -115,6 +115,7 @@ CREATE TABLE dss_extract_stats(
   tbl text not null,
   inserted integer not null default 0,
   updated integer not null default 0,
+  deleted integer not null default 0,
   primary key (job_id, database, tbl)
 );
 
