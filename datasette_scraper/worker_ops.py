@@ -133,7 +133,7 @@ def discover_missing_dictionaries(conn):
 
 def seed_crawl(conn, job_id):
     config = get_crawl_config_for_job_id(conn, job_id)
-    seeds = [url for urls in pm.hook.get_seed_urls(config=config) for url in urls]
+    seeds = [url for urls in pm.hook.get_seed_urls(conn=conn, config=config, job_id=job_id) for url in urls]
 
     hosts = []
     with conn:

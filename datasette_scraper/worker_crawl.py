@@ -94,8 +94,8 @@ def update_crawl_stats(conn, job_id, host, response, fresh):
 
         conn.execute("UPDATE dss_job_stats SET fetched = fetched + 1, {} = {} + 1{} WHERE job_id = ? AND host = ?".format(xx_column, xx_column, maybe_fetched_fresh), [job_id, host])
 
-def discover_urls(config, from_url, from_depth, response):
-    urls = [new_url for urls in pm.hook.discover_urls(config=config, url=from_url, response=response) for new_url in urls]
+def discover_urls(conn, config, job_id, from_url, from_depth, response):
+    urls = [new_url for urls in pm.hook.discover_urls(conn=conn, config=config, job_id=job_id, url=from_url, response=response) for new_url in urls]
 
     # Normalize URLs into (url, depth) form
     urls = [new_url if isinstance(new_url, tuple) else (new_url, from_depth + 1) for new_url in urls]
@@ -114,7 +114,7 @@ def discover_urls(config, from_url, from_depth, response):
             # We do max 10 canonicalization attempts to prevent infinite loops from broken
             # plugins.
             attempts += 1
-            results = pm.hook.canonicalize_url(config=config, from_url=from_url, to_url=to_url, to_url_depth=to_url_depth)
+            results = pm.hook.canonicalize_url(conn=conn, config=config, job_id=job_id, from_url=from_url, to_url=to_url, to_url_depth=to_url_depth)
 
             rewritten = False
             for x in results:
@@ -172,7 +172,7 @@ def crawl_loop(dss_db_name, factory):
     fresh = False
     start = time.time()
     # fetch_cached_url: Fetch a previously cached URL.
-    response = pm.hook.fetch_cached_url(conn=conn, config=config, url=url, depth=depth, request_headers=request_headers)
+    response = pm.hook.fetch_cached_url(conn=conn, config=config, job_id=job_id, url=url, depth=depth, request_headers=request_headers)
     fetch_duration = math.ceil(1000 * (time.time() - start))
 
     if not response:
@@ -211,16 +211,16 @@ def crawl_loop(dss_db_name, factory):
     #       writing, eg at most once every 5 seconds
     update_crawl_stats(conn, job_id, host, response, fresh)
 
-    pm.hook.after_fetch_url(conn=conn, config=config, url=url, request_headers=request_headers, response=response, fresh=fresh, fetch_duration=fetch_duration)
+    pm.hook.after_fetch_url(conn=conn, config=config, job_id=job_id, url=url, request_headers=request_headers, response=response, fresh=fresh, fetch_duration=fetch_duration)
 
-    urls = discover_urls(config, url, depth, response)
+    urls = discover_urls(conn, config, job_id, url, depth, response)
     # Try to insert these URLs into dss_crawl_queue; skipping entries that are already
     # present, or present in dss_crawl_queue_history with a lower or equal depth.
     now = time.time()
     enqueued = utils.add_crawl_queue_items(conn, job_id, urls)
     #print('enqueued {}/{} urls in {} sec'.format(enqueued, len(urls), time.time() - now))
 
-    for insert in pm.hook.extract_from_response(config=config, url=url, response=response):
+    for insert in pm.hook.extract_from_response(conn=conn, config=config, job_id=job_id, url=url, response=response):
         if insert:
             rv = inserts.handle_insert(factory, insert)
 

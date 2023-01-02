@@ -3,12 +3,12 @@ from ..hookspecs import hookimpl
 MAX_DEPTH = 'max-depth'
 
 @hookimpl
-def before_fetch_url(config, depth):
+def canonicalize_url(config, to_url_depth):
     if MAX_DEPTH in config:
         max_depth = config[MAX_DEPTH]
 
-        if depth > max_depth:
-            return 'max-depth {} is less than depth {}'.format(max_depth, depth)
+        if to_url_depth > max_depth:
+            return False
 
 @hookimpl
 def config_schema():

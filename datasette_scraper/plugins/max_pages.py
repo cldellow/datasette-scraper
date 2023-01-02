@@ -3,7 +3,7 @@ from ..hookspecs import hookimpl
 MAX_PAGES = 'max-pages'
 
 @hookimpl
-def before_fetch_url(conn, config, job_id):
+def canonicalize_url(conn, config, job_id):
     if MAX_PAGES in config:
         max_pages = config[MAX_PAGES]
 

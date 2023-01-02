@@ -4,11 +4,11 @@ from urllib.parse import urlparse
 MAX_PAGES_PER_DOMAIN = 'max-pages-per-domain'
 
 @hookimpl
-def before_fetch_url(conn, config, job_id, url):
+def canonicalize_url(conn, config, job_id, to_url):
     if MAX_PAGES_PER_DOMAIN in config:
         max_pages = config[MAX_PAGES_PER_DOMAIN]
 
-        parsed = urlparse(url)
+        parsed = urlparse(to_url)
         host = parsed.hostname
 
         fetched, = conn.execute('SELECT COALESCE(SUM(fetched), 0) FROM dss_job_stats WHERE job_id = ? AND host = ?', [job_id, host]).fetchone()
