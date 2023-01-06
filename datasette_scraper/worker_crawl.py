@@ -224,6 +224,9 @@ def crawl_loop(dss_db_name, factory):
         if insert:
             rv = inserts.handle_insert(factory, insert)
 
+            # TODO: this generates a lot of write txns and churn, but it's gloriously
+            #       commutative. We should signal our counts to the coordinator,
+            #       and it can update them on some cadence, eg once every second
             for ((dbname, tablename), (inserted, updated, deleted)) in rv.items():
                 conn.execute('INSERT INTO dss_extract_stats(job_id, database, tbl, inserted, updated, deleted) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(job_id, database, tbl) DO UPDATE SET inserted = inserted + ?, updated = updated + ?, deleted = deleted + ?', [job_id, dbname or dss_db_name, tablename, inserted, updated, deleted, inserted, updated, deleted])
 
