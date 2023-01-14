@@ -97,6 +97,37 @@
   min-width: 5em;
 }
 
+.root_properties_discover-allow thead {
+  display: none;
+}
+
+.root_properties_discover-allow table td {
+  font-size: 0;
+}
+
+.root_properties_discover-allow table input {
+  min-width: 20em;
+}
+
+.root_properties_discover-allow table:has(button) td {
+  font-size: initial;
+}
+
+.root_properties_discover-allow table:has(button) thead {
+  display: table-header-group;
+}
+
+
+.root_properties_discover-allow table td:after {
+  content: 'All discovered URLs will be crawled. Use the ➕ to add restrictions.';
+  font-size: initial;
+}
+
+.root_properties_discover-allow table:has(button) td:after {
+  content: initial;
+}
+
+
 .root_properties_discover-deny thead {
   display: none;
 }

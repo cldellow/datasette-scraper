@@ -6,6 +6,7 @@ from . import hookspecs
 DEFAULT_PLUGINS = (
     "datasette_scraper.plugins.fetch_url",
     "datasette_scraper.plugins.fetch_cache",
+    "datasette_scraper.plugins.discover_allow",
     "datasette_scraper.plugins.discover_deny",
     "datasette_scraper.plugins.discover_html_links",
     "datasette_scraper.plugins.discover_only_same_origin",

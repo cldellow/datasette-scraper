@@ -118,11 +118,11 @@ def discover_urls(conn, config, job_id, from_url, from_depth, response):
 
             rewritten = False
             for x in results:
-                if isinstance(x, str):
+                if isinstance(x, str) and x != to_url:
                     to_url = x
                     rewritten = True
                     break
-                if isinstance(x, tuple):
+                if isinstance(x, tuple) and x[0] != to_url and x[1] != to_url_depth:
                     to_url = x[0]
                     to_url_depth = x[1]
                     rewritten = True

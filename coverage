@@ -1,0 +1,3 @@
+#!/bin/bash
+set -euo pipefail
+coverage run -m pytest && coverage report

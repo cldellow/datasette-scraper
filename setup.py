@@ -33,7 +33,7 @@ setup(
     packages=["datasette_scraper", "datasette_scraper.plugins"],
     entry_points={"datasette": ["scraper = datasette_scraper"]},
     install_requires=["datasette", "selectolax", "datasette-template-sql", "pluggy", "httpx", "zstandard", "more-itertools"],
-    extras_require={"test": ["wheel", "pytest", "pytest-asyncio", "pytest-watch"]},
+    extras_require={"test": ["wheel", "pytest", "pytest-asyncio", "pytest-watch", "coverage"]},
     package_data={
         "datasette_scraper": ["static/*", "templates/*"]
     },
