@@ -243,6 +243,8 @@ def render_cell(database, row, table, column, value):
     if table == 'dss_job_stats':
         if column == 'host':
             return link(value, '/{}/dss_crawl_queue_history?job_id__exact={}&host__exact={}&_sort_desc=processed_at'.format(database, row['job_id']['value'], row['host']))
+        elif column == 'fetched_fresh':
+            return link(value, '/{}/dss_crawl_queue_history?job_id__exact={}&host__exact={}&fetched_fresh__exact=1&_sort_desc=processed_at'.format(database, row['job_id']['value'], row['host']))
         elif column.startswith('fetched_') and column.endswith('xx'):
             start = 100 * int(column[8])
             return link(value, '/{}/dss_crawl_queue_history?job_id__exact={}&host__exact={}&status_code__gte={}&status_code__lte={}&_sort_desc=processed_at'.format(database, row['job_id']['value'], row['host'], start, start + 99))
