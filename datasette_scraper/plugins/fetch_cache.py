@@ -43,6 +43,7 @@ def fetch_cached_url(conn, config, url, depth, request_headers):
     if not row:
         return None
 
+    # TODO: consider batching these in a txn to reduce write lock contention
     with conn:
         conn.execute("UPDATE dss_fetch_cache SET read_at = strftime('%Y-%m-%d %H:%M:%f') WHERE request_hash = ?", [hash]).fetchone()
 
