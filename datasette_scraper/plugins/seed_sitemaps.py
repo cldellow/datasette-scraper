@@ -27,6 +27,12 @@ def get_seed_urls(config):
         if host in seen_hosts:
             continue
 
+        # Only crawl a sitemap if the seed is for a root.
+        # This lets users mix-and-match directed crawls
+        # with sitemap crawls.
+        if parsed.path != '' and parsed.path != '/':
+            continue
+
         seen_hosts[host] = True
 
         candidates = [
