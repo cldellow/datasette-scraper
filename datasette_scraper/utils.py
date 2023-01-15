@@ -37,27 +37,29 @@ def add_crawl_queue_items(conn, job_id, urls):
     batched_urls = batched(all_urls, batch_size)
 
     already_queued = {}
-    for batch in batched_urls:
-        cur = conn.execute(
-            'SELECT url FROM dss_crawl_queue WHERE job_id = {} AND url IN ({})'.format(job_id, ','.join(['?'] * len(batch))),
-            batch
-        )
-        cur.arraysize = 100
-        rv = cur.fetchmany()
-        for (fetched_url, ) in rv:
-            already_queued[fetched_url] = True
+    with conn:
+        conn.execute('BEGIN TRANSACTION')
+        for batch in batched_urls:
+            cur = conn.execute(
+                'SELECT url FROM dss_crawl_queue WHERE job_id = {} AND url IN ({})'.format(job_id, ','.join(['?'] * len(batch))),
+                batch
+            )
+            cur.arraysize = 100
+            rv = cur.fetchmany()
+            for (fetched_url, ) in rv:
+                already_queued[fetched_url] = True
 
-    all_urls = [url for url in all_urls if not url in already_queued]
-    batched_urls = batched(all_urls, batch_size)
-    for batch in batched_urls:
-        cur = conn.execute(
-            'SELECT url FROM dss_crawl_queue_history WHERE job_id = {} AND url IN ({})'.format(job_id, ','.join(['?'] * len(batch))),
-            batch
-        )
-        cur.arraysize = 100
-        rv = cur.fetchmany()
-        for (fetched_url, ) in rv:
-            already_queued[fetched_url] = True
+        all_urls = [url for url in all_urls if not url in already_queued]
+        batched_urls = batched(all_urls, batch_size)
+        for batch in batched_urls:
+            cur = conn.execute(
+                'SELECT url FROM dss_crawl_queue_history WHERE job_id = {} AND url IN ({})'.format(job_id, ','.join(['?'] * len(batch))),
+                batch
+            )
+            cur.arraysize = 100
+            rv = cur.fetchmany()
+            for (fetched_url, ) in rv:
+                already_queued[fetched_url] = True
 
     urls = [url for url in urls if not url[0] in already_queued]
 
@@ -72,6 +74,7 @@ def add_crawl_queue_item(conn, job_id, url, depth):
         host = parsed.hostname
 
         #print('insert dss_host_rate_limit host={}'.format(host))
+        conn.execute('BEGIN TRANSACTION')
         conn.execute('INSERT INTO dss_host_rate_limit(host) SELECT ? WHERE NOT EXISTS(SELECT * FROM dss_host_rate_limit WHERE host = ?)', [host, host])
 
 
@@ -82,6 +85,7 @@ def add_crawl_queue_item(conn, job_id, url, depth):
 
 def reject_crawl_queue_item(conn, id, reason):
     with conn:
+        conn.execute('BEGIN TRANSACTION')
         conn.execute("INSERT INTO dss_crawl_queue_history(job_id, host, url, depth, processed_at, fetched_fresh, skipped_reason) SELECT job_id, host, url, depth, strftime('%Y-%m-%d %H:%M:%f'), 0, ? FROM dss_crawl_queue WHERE id = ?", [reason, id])
         conn.execute("DELETE FROM dss_crawl_queue WHERE id = ?", [id])
 
@@ -97,14 +101,15 @@ def finish_crawl_queue_item(conn, id, response, fresh, fetch_duration):
             content_type = header[1].split(';')[0]
 
     with conn:
+        conn.execute('BEGIN TRANSACTION')
         conn.execute("INSERT INTO dss_crawl_queue_history(job_id, host, url, depth, processed_at, fetched_fresh, status_code, content_type, size, duration, request_hash) SELECT job_id, host, url, depth, strftime('%Y-%m-%d %H:%M:%f'), ?, ?, ?, ?, ?, ? FROM dss_crawl_queue WHERE id = ?", [fresh, status_code, content_type, size, fetch_duration, response['_request_hash'] if '_request_hash' in response else None, id])
         conn.execute("DELETE FROM dss_crawl_queue WHERE id = ?", [id])
 
 def check_for_job_complete(conn, job_id):
-    with conn:
-        more_to_do, = conn.execute("SELECT EXISTS(SELECT * FROM dss_crawl_queue WHERE job_id = ?) AND EXISTS(SELECT * FROM dss_job WHERE id = ? AND status != 'cancelled' AND status != 'done')", [job_id, job_id]).fetchone()
-
-        if not more_to_do:
+    more_to_do, = conn.execute("SELECT EXISTS(SELECT * FROM dss_crawl_queue WHERE job_id = ?) AND EXISTS(SELECT * FROM dss_job WHERE id = ? AND status != 'cancelled' AND status != 'done')", [job_id, job_id]).fetchone()
+    if not more_to_do:
+        with conn:
+            conn.execute('BEGIN TRANSACTION')
             conn.execute("UPDATE dss_job SET status = 'done', finished_at = strftime('%Y-%m-%d %H:%M:%f') WHERE id = ? AND finished_at IS NULL", [job_id])
             conn.execute("DELETE FROM dss_crawl_queue WHERE job_id = ?", [job_id])
 
@@ -119,6 +124,7 @@ def lazy_connection_factory(db_map):
             return conns[name]
 
         conn = sqlite3.connect(db_map[name])
+        conn.isolation_level = None
         ensure_wal_mode(conn)
 
         # See https://www.sqlite.org/pragma.html#pragma_synchronous; this is much faster,

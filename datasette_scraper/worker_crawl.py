@@ -77,6 +77,7 @@ def absolutize_urls(base_url, new_url):
 
 def update_crawl_stats(conn, job_id, host, response, fresh):
     with conn:
+        conn.execute('BEGIN TRANSACTION')
         conn.execute("INSERT OR IGNORE INTO dss_job_stats(job_id, host) VALUES (?, ?)", [job_id, host])
         xx_column = 'fetched_5xx'
         status_code = response['status_code']
@@ -178,6 +179,7 @@ def crawl_loop(dss_db_name, factory):
     if not response:
         # Try to update dss_host_rate_limit
         with conn:
+            conn.execute('BEGIN TRANSACTION')
             claim_rate_limit = conn.execute("UPDATE dss_host_rate_limit SET next_fetch_at = strftime('%Y-%m-%d %H:%M:%f', 'now', delay_seconds || ' seconds') WHERE host = ? AND next_fetch_at < strftime('%Y-%m-%d %H:%M:%f')", [host])
 
             if claim_rate_limit.rowcount != 1:
