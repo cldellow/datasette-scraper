@@ -2,7 +2,8 @@ from ..hookspecs import hookimpl
 from datetime import datetime
 import httpx
 
-client = httpx.Client()
+timeout = httpx.Timeout(5.0, read=20.0)
+client = httpx.Client(timeout=timeout)
 
 @hookimpl(trylast=True)
 def fetch_url(url, request_headers):
