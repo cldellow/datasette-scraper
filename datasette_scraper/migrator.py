@@ -209,7 +209,7 @@ class DBMigrator:
         # Migrate the indices
         indices = dict(self.db.execute("""\
             SELECT name, sql FROM sqlite_master
-            WHERE type = \"index\"""").fetchall())
+            WHERE type = \"index\" AND tbl_name LIKE 'dss_%'""").fetchall())
         for name in set(indices.keys()) - set(pristine_indices.keys()):
             self.log_execute("Dropping obsolete index %s" % name,
                              "DROP INDEX %s" % name)
