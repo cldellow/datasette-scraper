@@ -1,4 +1,4 @@
-{% for row in sql("select * from dss_job WHERE crawl_id = ? AND finished_at IS NULL", [dss_id]) %}
+{% for row in sql("select * from dss_job WHERE crawl_id = ? AND finished_at IS NULL", [dss_id], database=database) %}
 <h2><a href='../dss_job/{{row['id']}}'>Job #{{row['id']}}</a> ({{row['status']}})</h2>
   Pending: {{ "{:,}".format(sql('select count(*) FROM dss_crawl_queue WHERE job_id = ?', [row['id']])[0][0]) }}
   Crawled: {{ "{:,}".format(sql('select count(*) FROM dss_crawl_queue_history WHERE job_id = ?', [row['id']])[0][0]) }}
