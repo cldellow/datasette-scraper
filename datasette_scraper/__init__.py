@@ -104,21 +104,37 @@ def get_metadata(datasette, key, database, table):
         rv['databases'][db_name] = {
             'tables': {
                 'dss_crawl_queue': {
-                    'sort_desc': 'id'
+                    'sort_desc': 'id',
+                    'hidden': True,
                 },
                 'dss_crawl_queue_history': {
-                    'sort_desc': 'processed_at'
+                    'sort_desc': 'processed_at',
+                    'hidden': True,
+                },
+                'dss_extract_stats': {
+                    'hidden': True,
                 },
                 'dss_fetch_cache': {
-                    'sort_desc': 'fetched_at'
+                    'sort_desc': 'fetched_at',
+                    'hidden': True,
+                },
+                'dss_host_rate_limit': {
+                    'hidden': True,
                 },
                 'dss_job': {
-                    'sort_desc': 'id'
+                    'sort_desc': 'id',
+                    'hidden': True,
                 },
                 'dss_job_stats': {
-                    'sort_desc': 'job_id'
+                    'sort_desc': 'job_id',
+                    'hidden': True,
                 },
-
+                'dss_ops': {
+                    'hidden': True,
+                },
+                'dss_zstd_dict': {
+                    'hidden': True,
+                },
             }
         }
 

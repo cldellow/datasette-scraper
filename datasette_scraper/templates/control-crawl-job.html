@@ -8,7 +8,11 @@
     <input type='submit' value='Cancel Job'>
   </form>
 {% else %}
-  <h2>No job currently running</h2>
+  <h2>No job currently running
+    {% for row in sql("select id from dss_job where crawl_id = ? order by id desc limit 1", [dss_id], database=database) %}
+    (<a href="../dss_job/{{row['id']}}">previous job #{{row['id']}}</a>)
+    {% endfor %}
+  </h2>
   <form method='post' action='/{{ dss_db }}/-/scraper/crawl/{{ dss_id }}/start'>
     <input type="hidden" name="csrftoken" value="{{ csrftoken() }}">
     <input type='hidden' name='id' value='{{ dss_id }}'/>
